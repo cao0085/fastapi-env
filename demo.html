@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>ABC Notation Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/abcjs@6.4.4/dist/abcjs-basic-min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/abcjs@6.4.4/dist/abcjs-audio.css">
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    h2 { color: #333; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    textarea {
+      width: 100%; height: 100px; font-family: monospace;
+      font-size: 13px; padding: 8px; box-sizing: border-box;
+      border: 1px solid #ccc; border-radius: 4px;
+    }
+    button {
+      margin-top: 10px; padding: 8px 20px;
+      background: #2563eb; color: white;
+      border: none; border-radius: 4px; cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+    .sheet { margin-top: 16px; }
+    .audio-ctrl { margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+<h2>🎵 ABC Notation Viewer</h2>
+
+<!-- 預設範例：Autumn Leaves（枯葉）片段 -->
+<div class="card">
+  <h3>Mock 資料：Autumn Leaves（枯葉）片段</h3>
+  <textarea id="abc-input">X:1
+T:Autumn Leaves - ii-V-I in G minor
+M:4/4
+L:1/8
+Q:1/4=120
+K:Gm
+|: Am7b5 d2 fd cAFD | G7 G4 BAGF | Cm7 E2 GE DEFD | Cm6 C6 z2 |
+   Fm7 f2 af gfed | Bb7 B,4 DCBA, | Ebmaj7 E8 | D7 D6 z2 :|</textarea>
+  <button onclick="render()">渲染樂譜</button>
+  <div id="sheet" class="sheet"></div>
+  <div id="audio-ctrl" class="audio-ctrl"></div>
+</div>
+
+<!-- Walking Line mock -->
+<div class="card">
+  <h3>Walking Line Mock（C major, ii-V-I, 4 bars）</h3>
+  <pre style="background:#f4f4f4;padding:12px;border-radius:4px;font-size:12px">{
+  "key": "C",
+  "progression": "ii-V-I",
+  "bars": [
+    { "chord": "Dm7",   "notes": ["D2", "F2", "A2", "C2"] },
+    { "chord": "G7",    "notes": ["G2", "B2", "D2", "F2"] },
+    { "chord": "Cmaj7", "notes": ["C2", "E2", "G2", "B2"] },
+    { "chord": "Cmaj7", "notes": ["C2", "E2", "G2", "C2"] }
+  ]
+}</pre>
+  <button onclick="renderWalkingLine()">轉成樂譜</button>
+  <div id="walking-sheet" class="sheet"></div>
+  <div id="walking-audio-ctrl" class="audio-ctrl"></div>
+</div>
+
+<script>
+  let visualObj1 = null;
+  let visualObj2 = null;
+
+  function render() {
+    const abc = document.getElementById('abc-input').value;
+    visualObj1 = ABCJS.renderAbc('sheet', abc, { responsive: 'resize' });
+    setupAudio(visualObj1, 'audio-ctrl');
+  }
+
+  function renderWalkingLine() {
+    const mock = {
+      key: "C",
+      progression: "ii-V-I",
+      bars: [
+        { chord: "Dm7",   notes: ["D2", "F2", "A2", "C2"] },
+        { chord: "G7",    notes: ["G2", "B2", "D2", "F2"] },
+        { chord: "Cmaj7", notes: ["C2", "E2", "G2", "B2"] },
+        { chord: "Cmaj7", notes: ["C2", "E2", "G2", "C2"] }
+      ]
+    };
+    const abc = jsonToAbc(mock);
+    visualObj2 = ABCJS.renderAbc('walking-sheet', abc, { responsive: 'resize' });
+    setupAudio(visualObj2, 'walking-audio-ctrl');
+  }
+
+  function setupAudio(visualObj, ctrlId) {
+    if (!ABCJS.synth.supportsAudio()) {
+      document.getElementById(ctrlId).innerText = '此瀏覽器不支援 Web Audio';
+      return;
+    }
+    const ctrl = document.getElementById(ctrlId);
+    ctrl.innerHTML = '';
+
+    const synthControl = new ABCJS.synth.SynthController();
+    synthControl.load('#' + ctrlId, null, {
+      displayLoop: true,
+      displayRestart: true,
+      displayPlay: true,
+      displayProgress: true,
+      displayWarp: true,
+    });
+
+    const synth = new ABCJS.synth.CreateSynth();
+    synth.init({ visualObj: visualObj[0] }).then(() => {
+      synthControl.setTune(visualObj[0], false).then(() => {
+        console.log('Audio ready');
+      });
+    });
+  }
+
+  function jsonToAbc(data) {
+    const barLines = data.bars.map(bar => bar.notes.join('') + '|').join(' ');
+    return `X:1
+T:Walking Line - ${data.key} - ${data.progression}
+M:4/4
+L:1/8
+Q:1/4=120
+K:${data.key}
+%%MIDI program 33
+|: ${barLines}`;
+  }
+
+  window.onload = () => {
+    render();
+    renderWalkingLine();
+  };
+</script>
+
+</body>
+</html>
