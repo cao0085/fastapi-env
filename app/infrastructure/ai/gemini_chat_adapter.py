@@ -27,12 +27,12 @@ class GeminiChatAdapter(IGeminiChatAdapter):
             for msg in prior_messages
         ]
 
-        chat = self._client.chats.create(
+        chat = self._client.aio.chats.create(
             model=self._model,
             config=types.GenerateContentConfig(
                 system_instruction=system_prompt,
             ),
             history=gemini_history,
         )
-        response = chat.send_message(current_message)
+        response = await chat.send_message(current_message)
         return response.text

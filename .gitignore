@@ -1,3 +1,4 @@
+# Python
 .venv/
 venv/
 __pycache__/
@@ -13,3 +14,15 @@ get-pip.py
 dist/
 build/
 *.egg-info/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Redis
+dump.rdb
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,11 +1,15 @@
 from abc import ABC, abstractmethod
 
-from .entities import MusicPiece
+from .entities import MusicGenerationSession
+from .value_objects import SessionId
 
 
-class IMusicRepository(ABC):
+class IMusicGenerationSessionRepository(ABC):
     @abstractmethod
-    async def save(self, piece: MusicPiece) -> None: ...
+    async def get(self, session_id: SessionId) -> MusicGenerationSession | None: ...
 
     @abstractmethod
-    async def get(self, piece_id: str) -> MusicPiece | None: ...
+    async def save(self, session: MusicGenerationSession) -> None: ...
+
+    @abstractmethod
+    async def delete(self, session_id: SessionId) -> None: ...

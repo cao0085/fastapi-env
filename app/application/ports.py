@@ -8,6 +8,18 @@ from app.domain.music.value_objects import Bar, ChordProgression, MusicalKey
 @dataclass
 class WalkingLineRawResult:
     bars: list[Bar]
+    abc_notation: str | None = None
+
+
+@dataclass(frozen=True)
+class WalkingLineContext:
+    key: MusicalKey
+    progression: ChordProgression
+    bars_count: int
+    instrument_prompt: str
+    extra_note: str
+    prior_versions: list[list[Bar]]
+    latest_refinement: str | None
 
 
 class IGeminiChatAdapter(ABC):
@@ -23,8 +35,6 @@ class IGeminiMusicAdapter(ABC):
     @abstractmethod
     async def generate_walking_line(
         self,
-        key: MusicalKey,
-        progression: ChordProgression,
-        bars: int,
+        ctx: WalkingLineContext,
         system_prompt: str,
     ) -> WalkingLineRawResult: ...

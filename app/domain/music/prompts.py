@@ -25,6 +25,8 @@ class MusicSystemPrompts:
 不要在 JSON 之外附加任何說明文字。
 音符請使用標準音名（C、D、Eb、F#等）。
 Walking line 需遵循聲部進行原則。
+abc_notation 欄位請輸出符合 ABC notation 標準格式的完整樂譜字串，
+必須包含 X:（序號）、T:（標題）、M:（拍號）、L:（音符長度）、K:（調性）等標頭，以及所有小節的音符。
 """
 
     @staticmethod
