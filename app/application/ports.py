@@ -8,6 +8,7 @@ from app.domain.music.value_objects import Bar, ChordProgression, MusicalKey
 @dataclass
 class WalkingLineRawResult:
     bars: list[Bar]
+    abc_notation: str | None = None
 
 
 @dataclass(frozen=True)

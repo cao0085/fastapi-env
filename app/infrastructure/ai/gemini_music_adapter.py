@@ -26,8 +26,9 @@ WALKING_LINE_SCHEMA = {
                 "required": ["chord", "notes"],
             },
         },
+        "abc_notation": {"type": "string"},
     },
-    "required": ["key", "progression", "bars"],
+    "required": ["key", "progression", "bars", "abc_notation"],
 }
 
 
@@ -41,7 +42,7 @@ class GeminiMusicAdapter(IGeminiMusicAdapter):
         ctx: WalkingLineContext,
         system_prompt: str,
     ) -> WalkingLineRawResult:
-        response = self._client.models.generate_content(
+        response = await self._client.aio.models.generate_content(
             model=self._model,
             contents=_build_prompt(ctx),
             config=types.GenerateContentConfig(
@@ -58,7 +59,7 @@ class GeminiMusicAdapter(IGeminiMusicAdapter):
             )
             for b in data["bars"]
         ]
-        return WalkingLineRawResult(bars=result_bars)
+        return WalkingLineRawResult(bars=result_bars, abc_notation=data.get("abc_notation"))
 
 
 def _build_prompt(ctx: WalkingLineContext) -> str:

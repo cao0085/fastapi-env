@@ -15,6 +15,7 @@ from app.domain.music.entities import MusicGenerationSession
 from app.domain.music.prompts import MusicSystemPrompts
 from app.domain.music.repository import IMusicGenerationSessionRepository
 from app.domain.music.value_objects import (
+    AbcNotation,
     ChordProgression,
     GenerationRequest,
     InstrumentSpec,
@@ -69,7 +70,8 @@ class MusicService:
             system_prompt=MusicSystemPrompts.walking_line_with_key(key),
         )
 
-        session.add_initial_piece(bars=raw.bars, notation=None)
+        notation = AbcNotation(raw.abc_notation) if raw.abc_notation else None
+        session.add_initial_piece(bars=raw.bars, notation=notation)
         await self._repo.save(session)
 
         return _to_dto(session)
@@ -96,8 +98,9 @@ class MusicService:
             system_prompt=MusicSystemPrompts.walking_line_with_key(session.original_request.key),
         )
 
+        notation = AbcNotation(raw.abc_notation) if raw.abc_notation else None
         session.add_refinement_and_piece(
-            refinement=refinement, bars=raw.bars, notation=None
+            refinement=refinement, bars=raw.bars, notation=notation
         )
         await self._repo.save(session)
 

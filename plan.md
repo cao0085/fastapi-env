@@ -89,7 +89,7 @@ class GeminiMusicAdapter(IGeminiMusicAdapter):
 
 ---
 
-## Step 1：修 Async Bug ✗（Gemini adapters 阻塞 event loop）
+## Step 1：修 Async Bug ✓（Gemini adapters 阻塞 event loop）
 
 兩個 adapter 都宣告 `async def`，但內部呼叫**同步** SDK，會 block FastAPI event loop。
 
@@ -124,7 +124,7 @@ response = await chat.send_message(current_message)
 
 ---
 
-## Step 2：實作 ABC Notation 產出 ✗
+## Step 2：實作 ABC Notation 產出 ✓
 
 `MusicPiece.notation` 永遠是 `None`。`AbcNotation` value object 和 `NotationFormat.ABC` 都已設計，但 AI 沒有實際回傳 notation 文字。
 
@@ -143,7 +143,7 @@ response = await chat.send_message(current_message)
 
 ---
 
-## Step 3：新增 Unit Tests ✗
+## Step 3：新增 Unit Tests ✓
 
 DDD domain 層純 Python dataclass，不需 Redis / Gemini，最適合 unit test。
 
