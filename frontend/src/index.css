@@ -5,23 +5,25 @@
 }
 
 :root {
-  --bg: #0f0f1a;
-  --bg-card: #1a1a2e;
-  --bg-input: #0d0d1f;
-  --border: #2e2e50;
-  --accent: #f5a623;
-  --accent-dim: #c47f0a;
-  --text: #e0e0e0;
-  --text-muted: #888;
-  --user-bubble: #1e3a5f;
-  --model-bubble: #1a1a2e;
-  --error: #e05252;
+  --bg: #f0e8d5;
+  --bg-card: #f8f3e8;
+  --bg-input: #ffffff;
+  --border: #d4c5a8;
+  --accent: #3d7a78;
+  --accent-dim: #2d5f5d;
+  --accent-red: #c85535;
+  --accent-sand: #c8a882;
+  --text: #1e1a14;
+  --text-muted: #8a7860;
+  --user-bubble: #d8eceb;
+  --model-bubble: #f8f3e8;
+  --error: #c85535;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Georgia', 'Segoe UI', system-ui, serif;
   font-size: 15px;
   line-height: 1.6;
   min-height: 100vh;
