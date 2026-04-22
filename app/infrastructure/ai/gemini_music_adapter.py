@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 from google import genai
@@ -31,6 +32,19 @@ WALKING_LINE_SCHEMA = {
     "required": ["key", "progression", "bars", "abc_notation"],
 }
 
+FALLBACK_RESULT = WalkingLineRawResult(
+    bars=[
+        Bar(chord="Dm7", notes=[Note(pitch="D"), Note(pitch="F"), Note(pitch="A"), Note(pitch="C")]),
+        Bar(chord="G7",  notes=[Note(pitch="G"), Note(pitch="B"), Note(pitch="D"), Note(pitch="F")]),
+        Bar(chord="Cmaj7", notes=[Note(pitch="C"), Note(pitch="E"), Note(pitch="G"), Note(pitch="B")]),
+        Bar(chord="Cmaj7", notes=[Note(pitch="C"), Note(pitch="D"), Note(pitch="E"), Note(pitch="G")]),
+    ],
+    abc_notation=(
+        "X:1\nT:Fallback ii-V-I\nM:4/4\nL:1/4\nK:C\n"
+        "|D F A c|G B d f|C E G B|C D E G|"
+    ),
+)
+
 
 class GeminiMusicAdapter(IGeminiMusicAdapter):
     def __init__(self, client: genai.Client, model: str):
@@ -42,24 +56,31 @@ class GeminiMusicAdapter(IGeminiMusicAdapter):
         ctx: WalkingLineContext,
         system_prompt: str,
     ) -> WalkingLineRawResult:
-        response = await self._client.aio.models.generate_content(
-            model=self._model,
-            contents=_build_prompt(ctx),
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                response_mime_type="application/json",
-                response_schema=WALKING_LINE_SCHEMA,
-            ),
-        )
-        data = json.loads(response.text)
-        result_bars = [
-            Bar(
-                chord=b["chord"],
-                notes=[Note(pitch=n) for n in b["notes"]],
+        try:
+            response = await asyncio.wait_for(
+                self._client.aio.models.generate_content(
+                    model=self._model,
+                    contents=_build_prompt(ctx),
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        response_mime_type="application/json",
+                        response_schema=WALKING_LINE_SCHEMA,
+                    ),
+                ),
+                timeout=15,
             )
-            for b in data["bars"]
-        ]
-        return WalkingLineRawResult(bars=result_bars, abc_notation=data.get("abc_notation"))
+            data = json.loads(response.text)
+            result_bars = [
+                Bar(
+                    chord=b["chord"],
+                    notes=[Note(pitch=n) for n in b["notes"]],
+                )
+                for b in data["bars"]
+            ]
+            return WalkingLineRawResult(bars=result_bars, abc_notation=data.get("abc_notation"))
+        except Exception:
+            print("[GeminiMusicAdapter] failed, returning fallback data")
+            return FALLBACK_RESULT
 
 
 def _build_prompt(ctx: WalkingLineContext) -> str:
