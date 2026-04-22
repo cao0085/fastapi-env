@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep *)",
+      "Bash(C:/tony/Ubuntu_VM/shared/fastapi-env/venv/Scripts/python.exe -c \"import app.main\")",
+      "Bash(C:/tony/Ubuntu_VM/shared/fastapi-env/venv/Scripts/python.exe -c \"from app.api.routers import music_router; from app.api.dependencies import get_music_service, get_persona_catalog; from app.application.music.music_service import MusicService; from app.domain.music.entities import MusicGenerationSession; from app.infrastructure.persistence.redis_music_session_repository import RedisMusicSessionRepository; from app.infrastructure.catalog.json_persona_catalog import JsonPersonaCatalog; print\\('imports OK'\\)\")"
+    ]
+  }
+}

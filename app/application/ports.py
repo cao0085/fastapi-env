@@ -10,6 +10,17 @@ class WalkingLineRawResult:
     bars: list[Bar]
 
 
+@dataclass(frozen=True)
+class WalkingLineContext:
+    key: MusicalKey
+    progression: ChordProgression
+    bars_count: int
+    instrument_prompt: str
+    extra_note: str
+    prior_versions: list[list[Bar]]
+    latest_refinement: str | None
+
+
 class IGeminiChatAdapter(ABC):
     @abstractmethod
     async def send_message(
@@ -23,8 +34,6 @@ class IGeminiMusicAdapter(ABC):
     @abstractmethod
     async def generate_walking_line(
         self,
-        key: MusicalKey,
-        progression: ChordProgression,
-        bars: int,
+        ctx: WalkingLineContext,
         system_prompt: str,
     ) -> WalkingLineRawResult: ...

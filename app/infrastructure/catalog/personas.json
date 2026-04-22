@@ -1,0 +1,23 @@
+[
+  {
+    "persona_id": "ray_brown",
+    "display_name": "Ray Brown",
+    "era": "1950s-1990s",
+    "style": "bebop walking bass",
+    "prompt_fragment": "模仿 Ray Brown 的 bebop walking bass line 風格：平穩的四分音符走向、強調和弦根音與五度、適量穿插半音經過音與 enclosure、偶爾加入附點節奏變化。"
+  },
+  {
+    "persona_id": "chet_baker",
+    "display_name": "Chet Baker",
+    "era": "1950s-1980s",
+    "style": "8th-note trumpet solo",
+    "prompt_fragment": "模仿 Chet Baker 的抒情小號 solo 風格：以八分音符為主、流暢的旋律線、注重和弦內音與 lyrical 的空間感，避免過於密集的音符。"
+  },
+  {
+    "persona_id": "blues_walking_dotted",
+    "display_name": "Blues Walking (Dotted)",
+    "era": "Generic Blues",
+    "style": "walking bass with dotted rhythm",
+    "prompt_fragment": "藍調風格的 walking bass line，包含附點八分+十六分音符節奏變化，強調根音-五度-藍調音階的基本律動。"
+  }
+]

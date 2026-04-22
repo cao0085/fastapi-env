@@ -66,53 +66,68 @@ curl -X POST http://localhost:8000/chat \
 
 ---
 
-## Music — Walking Line 生成
+## Music — Generation Session (產譜 + 迭代微調)
 
-### 基本生成
+### 列出 persona catalog
 ```bash
-curl -X POST http://localhost:8000/music/walking-line \
+curl http://localhost:8000/music/personas
+```
+
+### 開新 session 並產出 v1
+```bash
+curl -X POST http://localhost:8000/music/sessions \
   -H "Content-Type: application/json" \
   -d '{
     "key": "C",
     "progression": "ii-V-I",
-    "bars": 4
+    "bars_count": 4,
+    "persona_id": "ray_brown",
+    "extra_note": "",
+    "output_format": "abc"
   }'
 ```
+> 回應含 `session_id` 與 `pieces[0]` (v1),保留 session_id 作下一步使用
 
-### Bb 調 Blues
+### 追加 refinement 產出 v2
 ```bash
-curl -X POST http://localhost:8000/music/walking-line \
+curl -X POST http://localhost:8000/music/sessions/<SESSION_ID>/refine \
   -H "Content-Type: application/json" \
-  -d '{
-    "key": "Bb",
-    "progression": "I-IV-V",
-    "bars": 12
-  }'
+  -d '{"refinement_text": "第四小節改成半音進行"}'
+```
+
+### 讀取整個 session (request + 所有版本 + refinements)
+```bash
+curl http://localhost:8000/music/sessions/<SESSION_ID>
+```
+
+### 刪除 session
+```bash
+curl -X DELETE http://localhost:8000/music/sessions/<SESSION_ID>
 ```
 
 ### 測試非法 key（domain 驗證）
 ```bash
-curl -X POST http://localhost:8000/music/walking-line \
+curl -X POST http://localhost:8000/music/sessions \
   -H "Content-Type: application/json" \
-  -d '{
-    "key": "X",
-    "progression": "ii-V-I",
-    "bars": 4
-  }'
+  -d '{"key":"X","progression":"ii-V-I","bars_count":4,"persona_id":"ray_brown","output_format":"abc"}'
 ```
-> 預期：HTTP 400 或 500，不應送到 Gemini
+> 預期：HTTP 400
 
-### 測試 bars 超出範圍（Pydantic 驗證）
+### 測試 bars_count 超出範圍（Pydantic 驗證)
 ```bash
-curl -X POST http://localhost:8000/music/walking-line \
+curl -X POST http://localhost:8000/music/sessions \
   -H "Content-Type: application/json" \
-  -d '{
-    "key": "C",
-    "progression": "I-IV-V",
-    "bars": 999
-  }'
+  -d '{"key":"C","progression":"I-IV-V","bars_count":999,"persona_id":"ray_brown","output_format":"abc"}'
 ```
-> 預期：HTTP 422 Unprocessable Entity
+> 預期：HTTP 422
+
+### 測試不存在的 persona
+```bash
+curl -X POST http://localhost:8000/music/sessions \
+  -H "Content-Type: application/json" \
+  -d '{"key":"C","progression":"ii-V-I","bars_count":4,"persona_id":"nobody","output_format":"abc"}'
+```
+> 預期：HTTP 400 persona not found
 
 ---
 
@@ -122,12 +137,14 @@ curl -X POST http://localhost:8000/music/walking-line \
 # 進入 redis container
 docker-compose exec redis redis-cli
 
-# 查看所有 session key
+# 聊天 session
 KEYS music:conv:*
-
-# 查看特定 session 內容
 HGETALL music:conv:test-session-1
 
-# 查看 TTL（應為 86400 以內）
-TTL music:conv:test-session-1
+# 產譜 session
+KEYS music:session:*
+HGETALL music:session:<SESSION_ID>
+
+# TTL (皆 86400 以內)
+TTL music:session:<SESSION_ID>
 ```

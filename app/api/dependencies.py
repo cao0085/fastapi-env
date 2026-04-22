@@ -1,16 +1,24 @@
 from functools import lru_cache
+from pathlib import Path
 
 import redis.asyncio as aioredis
 from google import genai
 
 from app.application.chat.chat_service import ChatService
 from app.application.music.music_service import MusicService
+from app.application.music.ports import IPersonaCatalog
 from app.infrastructure.ai.gemini_chat_adapter import GeminiChatAdapter
 from app.infrastructure.ai.gemini_music_adapter import GeminiMusicAdapter
+from app.infrastructure.catalog.json_persona_catalog import JsonPersonaCatalog
 from app.infrastructure.config import Settings
 from app.infrastructure.persistence.redis_conversation_repository import (
     RedisConversationRepository,
 )
+from app.infrastructure.persistence.redis_music_session_repository import (
+    RedisMusicSessionRepository,
+)
+
+_PERSONAS_JSON = Path(__file__).resolve().parent.parent / "infrastructure" / "catalog" / "personas.json"
 
 
 @lru_cache
@@ -20,12 +28,18 @@ def get_settings() -> Settings:
 
 @lru_cache
 def get_genai_client() -> genai.Client:
-    return genai.Client()
+    settings = get_settings()
+    return genai.Client(api_key=settings.gemini_api_key)
 
 
 def get_redis_client() -> aioredis.Redis:
     settings = get_settings()
     return aioredis.from_url(settings.redis_url, decode_responses=False)
+
+
+@lru_cache
+def get_persona_catalog() -> IPersonaCatalog:
+    return JsonPersonaCatalog(_PERSONAS_JSON)
 
 
 def get_chat_service() -> ChatService:
@@ -39,5 +53,7 @@ def get_chat_service() -> ChatService:
 def get_music_service() -> MusicService:
     settings = get_settings()
     return MusicService(
+        session_repo=RedisMusicSessionRepository(get_redis_client()),
+        persona_catalog=get_persona_catalog(),
         music_adapter=GeminiMusicAdapter(get_genai_client(), settings.gemini_model),
     )
