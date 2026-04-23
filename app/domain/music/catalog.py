@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from app.domain.music.value_object import PersonaId
+from .value_object import PersonaId
 
 
 @dataclass(frozen=True)
@@ -15,7 +15,7 @@ class PersonaEntry:
 
 class IPersonaCatalog(ABC):
     @abstractmethod
-    async def get(self, persona_id: PersonaId) -> PersonaEntry: ...
+    async def get(self, persona_id: PersonaId) -> PersonaEntry | None: ...
 
     @abstractmethod
     async def list_all(self) -> list[PersonaEntry]: ...

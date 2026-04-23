@@ -5,16 +5,19 @@ import redis.asyncio as aioredis
 
 from app.domain.music.entities import MusicGenerationSession, MusicPiece
 from app.domain.music.repository import IMusicGenerationSessionRepository
-from app.domain.music.factories import MusicSessionFactory
-from app.domain.music.value_objects import (
+from app.domain.music.value_object import (
     AbcNotation,
     Bar,
+    ChordProgression,
+    InstrumentSpec,
     Note,
+    NotationFormat,
+    PersonaId,
     RefinementMessage,
     SessionId,
     WalkingBassFeature,
 )
-from app.shared.enums import MusicFeature
+from app.shared.enums import MusicFeatureType, MusicalKey
 
 
 class RedisMusicSessionRepository(IMusicGenerationSessionRepository):
@@ -32,7 +35,7 @@ class RedisMusicSessionRepository(IMusicGenerationSessionRepository):
         if not raw:
             return None
 
-        feature = MusicFeature(raw[b"feature"].decode())
+        feature = MusicFeatureType(raw[b"feature"].decode())
         request = _deserialize_request(feature, json.loads(raw[b"request"]))
         pieces = [_deserialize_piece(p) for p in json.loads(raw[b"pieces"])]
         refinements = [_deserialize_refinement(r) for r in json.loads(raw[b"refinements"])]
@@ -79,8 +82,21 @@ def _serialize_request(r: WalkingBassFeature) -> dict:
     }
 
 
-def _deserialize_request(feature: MusicFeature, d: dict) -> WalkingBassFeature:
-    return MusicSessionFactory.create_feature(feature, d)
+def _deserialize_request(feature: MusicFeatureType, d: dict) -> WalkingBassFeature:
+    match feature:
+        case MusicFeatureType.WALKING_BASS:
+            return WalkingBassFeature(
+                type=feature,
+                key=MusicalKey(d["key"]),
+                progression=ChordProgression(d["progression"]),
+                bars_count=d["bars_count"],
+                instrument=InstrumentSpec(
+                    persona_id=PersonaId(d["persona_id"]),
+                    extra_note=d.get("extra_note", ""),
+                ),
+            )
+        case _:
+            raise ValueError(f"unsupported feature: {feature}")
 
 
 def _serialize_piece(p: MusicPiece) -> dict:

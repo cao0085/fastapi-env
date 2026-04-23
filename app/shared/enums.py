@@ -27,7 +27,7 @@ class NotationFormat(str, Enum):
     ABC = "abc"
 
 
-class MusicFeature(str, Enum):
+class MusicFeatureType(str, Enum):
     IMPROVISATION = "improvisation"
     WALKING_BASS = "walking_bass"
     RHYTHM = "rhythm"

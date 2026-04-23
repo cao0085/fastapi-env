@@ -5,15 +5,13 @@ from datetime import datetime
 from typing import ClassVar
 from uuid import uuid4
 
-from app.shared.enums import MusicFeature
-
-from .value_objects import (
+from .value_object import (
     AbcNotation,
     Bar,
     NotationFormat,
     RefinementMessage,
     SessionId,
-    WalkingBassFeature,
+    MusicFeature
 )
 
 
@@ -23,16 +21,15 @@ class MusicPiece:
     version: int
     bars: list[Bar]
     notation: AbcNotation | None
-    output_format: NotationFormat
-    created_at: datetime
+    output_format: NotationFormat | None = None
+    created_at: datetime = field(default_factory=datetime.utcnow)
     generated_from: RefinementMessage | None = None
 
-
+# 進行中 => 改成通用 aggregate
 @dataclass
 class MusicGenerationSession:
     session_id: SessionId
-    feature: MusicFeature
-    request: WalkingBassFeature
+    feature: MusicFeature # 當作 original rq 依據
     pieces: list[MusicPiece]
     refinements: list[RefinementMessage]
     created_at: datetime
@@ -44,20 +41,18 @@ class MusicGenerationSession:
     def new(
         cls,
         session_id: SessionId,
-        feature: MusicFeature,
-        request: WalkingBassFeature,
+        feature: MusicFeature
     ) -> "MusicGenerationSession":
         now = datetime.utcnow()
         return cls(
             session_id=session_id,
             feature=feature,
-            request=request,
             pieces=[],
             refinements=[],
             created_at=now,
             last_active_at=now,
         )
-
+    
     def add_initial_piece(
         self,
         bars: list[Bar],
@@ -70,7 +65,7 @@ class MusicGenerationSession:
             version=1,
             bars=bars,
             notation=notation,
-            output_format=self.original_request.output_format,
+            # output_format=self.request.output_format,
             created_at=datetime.utcnow(),
             generated_from=None,
         )
@@ -92,7 +87,6 @@ class MusicGenerationSession:
             version=len(self.pieces) + 1,
             bars=bars,
             notation=notation,
-            output_format=self.original_request.output_format,
             created_at=datetime.utcnow(),
             generated_from=refinement,
         )

@@ -4,7 +4,7 @@ from app.api.schemas.options_schemas import EnumOption, OptionsResponse
 from app.shared.enums import (
     Clef,
     Feel,
-    MusicFeature,
+    MusicFeatureType,
     MusicalKey,
     NotationFormat,
     RhythmPattern,
@@ -52,6 +52,6 @@ def get_options() -> OptionsResponse:
         time_signatures=[t.value for t in TimeSignature],
         subdivisions=[EnumOption(value=s.value, label=_SUBDIVISION_LABELS[s]) for s in Subdivision],
         rhythm_patterns=[EnumOption(value=p.value, label=_RHYTHM_PATTERN_LABELS[p]) for p in RhythmPattern],
-        features=[f.value for f in MusicFeature],
+        features=[f.value for f in MusicFeatureType],
         notation_formats=[n.value for n in NotationFormat],
     )

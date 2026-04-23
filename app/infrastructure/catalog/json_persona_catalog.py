@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from app.application.music.ports import IPersonaCatalog, PersonaEntry
-from app.domain.music.value_objects import PersonaId
+from app.domain.music.value_object import PersonaId
 
 
 class JsonPersonaCatalog(IPersonaCatalog):

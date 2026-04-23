@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from .entities import MusicGenerationSession
-from .value_objects import SessionId
+from .value_object import SessionId
 
 
 class IMusicGenerationSessionRepository(ABC):

@@ -2,13 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from app.domain.conversation.entities import Message
-from app.domain.music.value_objects import Bar, ChordProgression, MusicalKey
-
-
-@dataclass
-class WalkingLineRawResult:
-    bars: list[Bar]
-    abc_notation: str | None = None
+from app.domain.music.value_object import Bar, ChordProgression, MusicalKey
 
 
 @dataclass(frozen=True)
@@ -37,4 +31,4 @@ class IMusicAdapter(ABC):
         self,
         ctx: WalkingLineContext,
         system_prompt: str,
-    ) -> WalkingLineRawResult: ...
+    ) -> str: ...

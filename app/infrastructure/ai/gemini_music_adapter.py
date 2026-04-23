@@ -4,12 +4,7 @@ import json
 from google import genai
 from google.genai import types
 
-from app.application.ports import (
-    IMusicAdapter,
-    WalkingLineContext,
-    WalkingLineRawResult,
-)
-from app.domain.music.value_objects import Bar, Note
+from app.application.ports import IMusicAdapter, WalkingLineContext
 
 WALKING_LINE_SCHEMA = {
     "type": "object",
@@ -32,18 +27,17 @@ WALKING_LINE_SCHEMA = {
     "required": ["key", "progression", "bars", "abc_notation"],
 }
 
-FALLBACK_RESULT = WalkingLineRawResult(
-    bars=[
-        Bar(chord="Dm7", notes=[Note(pitch="D"), Note(pitch="F"), Note(pitch="A"), Note(pitch="C")]),
-        Bar(chord="G7",  notes=[Note(pitch="G"), Note(pitch="B"), Note(pitch="D"), Note(pitch="F")]),
-        Bar(chord="Cmaj7", notes=[Note(pitch="C"), Note(pitch="E"), Note(pitch="G"), Note(pitch="B")]),
-        Bar(chord="Cmaj7", notes=[Note(pitch="C"), Note(pitch="D"), Note(pitch="E"), Note(pitch="G")]),
+FALLBACK_JSON = json.dumps({
+    "key": "C",
+    "progression": "Dm7-G7-Cmaj7",
+    "bars": [
+        {"chord": "Dm7",   "notes": ["D", "F", "A", "C"]},
+        {"chord": "G7",    "notes": ["G", "B", "D", "F"]},
+        {"chord": "Cmaj7", "notes": ["C", "E", "G", "B"]},
+        {"chord": "Cmaj7", "notes": ["C", "D", "E", "G"]},
     ],
-    abc_notation=(
-        "X:1\nT:Fallback ii-V-I\nM:4/4\nL:1/4\nK:C\n"
-        "|D F A c|G B d f|C E G B|C D E G|"
-    ),
-)
+    "abc_notation": "X:1\nT:Fallback ii-V-I\nM:4/4\nL:1/4\nK:C\n|D F A c|G B d f|C E G B|C D E G|",
+})
 
 
 class GeminiMusicAdapter(IMusicAdapter):
@@ -55,7 +49,7 @@ class GeminiMusicAdapter(IMusicAdapter):
         self,
         ctx: WalkingLineContext,
         system_prompt: str,
-    ) -> WalkingLineRawResult:
+    ) -> str:
         try:
             response = await asyncio.wait_for(
                 self._client.aio.models.generate_content(
@@ -69,18 +63,10 @@ class GeminiMusicAdapter(IMusicAdapter):
                 ),
                 timeout=15,
             )
-            data = json.loads(response.text)
-            result_bars = [
-                Bar(
-                    chord=b["chord"],
-                    notes=[Note(pitch=n) for n in b["notes"]],
-                )
-                for b in data["bars"]
-            ]
-            return WalkingLineRawResult(bars=result_bars, abc_notation=data.get("abc_notation"))
+            return response.text
         except Exception:
             print("[GeminiMusicAdapter] failed, returning fallback data")
-            return FALLBACK_RESULT
+            return FALLBACK_JSON
 
 
 def _build_prompt(ctx: WalkingLineContext) -> str:
