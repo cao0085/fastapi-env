@@ -26,6 +26,7 @@ export default function WalkingBassPage() {
   })
   const [session, setSession] = useState(null)
   const [currentPieceIdx, setCurrentPieceIdx] = useState(0)
+  const [refinementText, setRefinementText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -42,7 +43,32 @@ export default function WalkingBassPage() {
       })
       setSession(data)
       setCurrentPieceIdx(data.pieces.length - 1)
+      setRefinementText('')
     } catch (err) { setError(err.message) } finally { setLoading(false) }
+  }
+
+  async function handleRefine(e) {
+    e.preventDefault()
+    if (!session || !refinementText.trim()) return
+    setError('')
+    setLoading(true)
+    try {
+      const data = await apiFetch(`/music/sessions/${session.session_id}/refine`, {
+        method: 'POST',
+        body: JSON.stringify({ refinement_text: refinementText }),
+      })
+      setSession(data)
+      setCurrentPieceIdx(data.pieces.length - 1)
+      setRefinementText('')
+    } catch (err) { setError(err.message) } finally { setLoading(false) }
+  }
+
+  async function handleDelete() {
+    if (!session) return
+    await apiFetch(`/music/sessions/${session.session_id}`, { method: 'DELETE' }).catch(() => {})
+    setSession(null)
+    setCurrentPieceIdx(0)
+    setRefinementText('')
   }
 
   const currentPiece = session?.pieces[currentPieceIdx]
@@ -103,6 +129,28 @@ export default function WalkingBassPage() {
         {loading ? '生成中…' : '產生'}
       </button>
       {error && <p className="error">{error}</p>}
+
+      {session && (
+        <div className="refinement-section">
+          <h3 className="section-title">精修</h3>
+          <div className="refinement-form">
+            <textarea
+              value={refinementText}
+              onChange={e => setRefinementText(e.target.value)}
+              rows={3}
+              placeholder="e.g. 第二小節多加經過音"
+            />
+            <div className="refinement-actions">
+              <button type="button" className="btn-primary" disabled={loading || !refinementText.trim()} onClick={handleRefine}>
+                {loading ? '精修中…' : '精修'}
+              </button>
+              <button type="button" className="btn-secondary" onClick={handleDelete}>
+                清除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   )
 
@@ -122,7 +170,21 @@ export default function WalkingBassPage() {
         <div className="piece-display">
           <div className="result-header">
             <span className="session-id">Session: {session.session_id.slice(0, 8)}…</span>
+            <div className="version-tabs">
+              {session.pieces.map((p, i) => (
+                <button
+                  key={p.piece_id}
+                  className={`version-tab ${i === currentPieceIdx ? 'active' : ''}`}
+                  onClick={() => setCurrentPieceIdx(i)}
+                >
+                  v{p.version}
+                </button>
+              ))}
+            </div>
           </div>
+          {currentPiece.generated_from && (
+            <div className="refinement-tag">精修：{currentPiece.generated_from}</div>
+          )}
           {currentPiece.notation && (
             <div className="notation-section">
               <AbcRenderer notation={currentPiece.notation} />
