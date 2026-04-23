@@ -4,6 +4,7 @@ from datetime import datetime
 
 @dataclass(frozen=True)
 class StartMusicGenerationCommand:
+    feature: str
     key: str
     progression: str
     bars_count: int
@@ -41,7 +42,7 @@ class RefinementDTO:
 
 
 @dataclass
-class GenerationRequestDTO:
+class WalkingBassRequestDTO:
     key: str
     progression: str
     bars_count: int
@@ -53,7 +54,8 @@ class GenerationRequestDTO:
 @dataclass
 class MusicSessionDTO:
     session_id: str
-    original_request: GenerationRequestDTO
+    feature: str
+    request: WalkingBassRequestDTO
     pieces: list[PieceDTO]
     refinements: list[RefinementDTO]
     created_at: datetime

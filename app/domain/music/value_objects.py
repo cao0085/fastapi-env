@@ -1,28 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
-
-
-class MusicalKey(str, Enum):
-    C = "C"
-    Db = "Db"
-    D = "D"
-    Eb = "Eb"
-    E = "E"
-    F = "F"
-    Gb = "Gb"
-    G = "G"
-    Ab = "Ab"
-    A = "A"
-    Bb = "Bb"
-    B = "B"
-    C_MINOR = "Cm"
-    D_MINOR = "Dm"
-    E_MINOR = "Em"
-    F_MINOR = "Fm"
-    G_MINOR = "Gm"
-    A_MINOR = "Am"
-    B_MINOR = "Bm"
+from app.shared.enums import MusicFeature, MusicalKey, NotationFormat  # noqa: F401 – re-exported for domain use
 
 
 @dataclass(frozen=True)
@@ -77,12 +55,8 @@ class InstrumentSpec:
     extra_note: str = ""
 
 
-class NotationFormat(str, Enum):
-    ABC = "abc"
-
-
 @dataclass(frozen=True)
-class GenerationRequest:
+class WalkingBassFeature:
     key: MusicalKey
     progression: ChordProgression
     bars_count: int

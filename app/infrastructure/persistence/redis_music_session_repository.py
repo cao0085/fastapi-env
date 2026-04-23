@@ -5,19 +5,16 @@ import redis.asyncio as aioredis
 
 from app.domain.music.entities import MusicGenerationSession, MusicPiece
 from app.domain.music.repository import IMusicGenerationSessionRepository
+from app.domain.music.factories import MusicSessionFactory
 from app.domain.music.value_objects import (
     AbcNotation,
     Bar,
-    ChordProgression,
-    GenerationRequest,
-    InstrumentSpec,
-    MusicalKey,
-    NotationFormat,
     Note,
-    PersonaId,
     RefinementMessage,
     SessionId,
+    WalkingBassFeature,
 )
+from app.shared.enums import MusicFeature
 
 
 class RedisMusicSessionRepository(IMusicGenerationSessionRepository):
@@ -35,13 +32,15 @@ class RedisMusicSessionRepository(IMusicGenerationSessionRepository):
         if not raw:
             return None
 
-        request = _deserialize_request(json.loads(raw[b"request"]))
+        feature = MusicFeature(raw[b"feature"].decode())
+        request = _deserialize_request(feature, json.loads(raw[b"request"]))
         pieces = [_deserialize_piece(p) for p in json.loads(raw[b"pieces"])]
         refinements = [_deserialize_refinement(r) for r in json.loads(raw[b"refinements"])]
 
         return MusicGenerationSession(
             session_id=session_id,
-            original_request=request,
+            feature=feature,
+            request=request,
             pieces=pieces,
             refinements=refinements,
             created_at=datetime.fromisoformat(raw[b"created_at"].decode()),
@@ -53,9 +52,10 @@ class RedisMusicSessionRepository(IMusicGenerationSessionRepository):
         await self._redis.hset(
             key,
             mapping={
+                "feature": session.feature.value,
                 "created_at": session.created_at.isoformat(),
                 "last_active_at": datetime.utcnow().isoformat(),
-                "request": json.dumps(_serialize_request(session.original_request)),
+                "request": json.dumps(_serialize_request(session.request)),
                 "pieces": json.dumps([_serialize_piece(p) for p in session.pieces]),
                 "refinements": json.dumps(
                     [_serialize_refinement(r) for r in session.refinements]
@@ -68,7 +68,7 @@ class RedisMusicSessionRepository(IMusicGenerationSessionRepository):
         await self._redis.delete(self._key(session_id))
 
 
-def _serialize_request(r: GenerationRequest) -> dict:
+def _serialize_request(r: WalkingBassFeature) -> dict:
     return {
         "key": r.key.value,
         "progression": r.progression.raw,
@@ -79,17 +79,8 @@ def _serialize_request(r: GenerationRequest) -> dict:
     }
 
 
-def _deserialize_request(d: dict) -> GenerationRequest:
-    return GenerationRequest(
-        key=MusicalKey(d["key"]),
-        progression=ChordProgression(d["progression"]),
-        bars_count=d["bars_count"],
-        instrument=InstrumentSpec(
-            persona_id=PersonaId(d["persona_id"]),
-            extra_note=d["extra_note"],
-        ),
-        output_format=NotationFormat(d["output_format"]),
-    )
+def _deserialize_request(feature: MusicFeature, d: dict) -> WalkingBassFeature:
+    return MusicSessionFactory.create_feature(feature, d)
 
 
 def _serialize_piece(p: MusicPiece) -> dict:

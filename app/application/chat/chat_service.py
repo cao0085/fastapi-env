@@ -1,4 +1,4 @@
-from app.application.ports import IGeminiChatAdapter
+from app.application.ports import IChatAdapter
 from app.domain.conversation.entities import ConversationSession
 from app.domain.conversation.repository import IConversationRepository
 from app.domain.conversation.value_objects import MessageRole, SessionId
@@ -11,7 +11,7 @@ class ChatService:
     def __init__(
         self,
         conversation_repo: IConversationRepository,
-        ai_adapter: IGeminiChatAdapter,
+        ai_adapter: IChatAdapter,
     ):
         self._repo = conversation_repo
         self._ai = ai_adapter

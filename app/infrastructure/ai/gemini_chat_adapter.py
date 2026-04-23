@@ -1,11 +1,11 @@
 from google import genai
 from google.genai import types
 
-from app.application.ports import IGeminiChatAdapter
+from app.application.ports import IChatAdapter
 from app.domain.conversation.entities import Message
 
 
-class GeminiChatAdapter(IGeminiChatAdapter):
+class GeminiChatAdapter(IChatAdapter):
     def __init__(self, client: genai.Client, model: str):
         self._client = client
         self._model = model

@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 
 from app.application.ports import (
-    IGeminiMusicAdapter,
+    IMusicAdapter,
     WalkingLineContext,
     WalkingLineRawResult,
 )
@@ -46,7 +46,7 @@ FALLBACK_RESULT = WalkingLineRawResult(
 )
 
 
-class GeminiMusicAdapter(IGeminiMusicAdapter):
+class GeminiMusicAdapter(IMusicAdapter):
     def __init__(self, client: genai.Client, model: str):
         self._client = client
         self._model = model

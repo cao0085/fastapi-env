@@ -22,7 +22,7 @@ class WalkingLineContext:
     latest_refinement: str | None
 
 
-class IGeminiChatAdapter(ABC):
+class IChatAdapter(ABC):
     @abstractmethod
     async def send_message(
         self,
@@ -31,7 +31,7 @@ class IGeminiChatAdapter(ABC):
     ) -> str: ...
 
 
-class IGeminiMusicAdapter(ABC):
+class IMusicAdapter(ABC):
     @abstractmethod
     async def generate_walking_line(
         self,

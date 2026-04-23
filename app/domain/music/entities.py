@@ -5,13 +5,15 @@ from datetime import datetime
 from typing import ClassVar
 from uuid import uuid4
 
+from app.shared.enums import MusicFeature
+
 from .value_objects import (
     AbcNotation,
     Bar,
-    GenerationRequest,
     NotationFormat,
     RefinementMessage,
     SessionId,
+    WalkingBassFeature,
 )
 
 
@@ -29,7 +31,8 @@ class MusicPiece:
 @dataclass
 class MusicGenerationSession:
     session_id: SessionId
-    original_request: GenerationRequest
+    feature: MusicFeature
+    request: WalkingBassFeature
     pieces: list[MusicPiece]
     refinements: list[RefinementMessage]
     created_at: datetime
@@ -38,11 +41,17 @@ class MusicGenerationSession:
     MAX_VERSIONS: ClassVar[int] = 10
 
     @classmethod
-    def new(cls, session_id: SessionId, request: GenerationRequest) -> "MusicGenerationSession":
+    def new(
+        cls,
+        session_id: SessionId,
+        feature: MusicFeature,
+        request: WalkingBassFeature,
+    ) -> "MusicGenerationSession":
         now = datetime.utcnow()
         return cls(
             session_id=session_id,
-            original_request=request,
+            feature=feature,
+            request=request,
             pieces=[],
             refinements=[],
             created_at=now,

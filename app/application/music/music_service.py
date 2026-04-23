@@ -2,29 +2,25 @@ from uuid import uuid4
 
 from app.application.music.dtos import (
     BarDTO,
-    GenerationRequestDTO,
     MusicSessionDTO,
     PieceDTO,
     RefineMusicGenerationCommand,
     RefinementDTO,
     StartMusicGenerationCommand,
+    WalkingBassRequestDTO,
 )
 from app.application.music.ports import IPersonaCatalog
-from app.application.ports import IGeminiMusicAdapter, WalkingLineContext
+from app.application.ports import IMusicAdapter, WalkingLineContext
 from app.domain.music.entities import MusicGenerationSession
+from app.domain.music.factories import MusicSessionFactory
 from app.domain.music.prompts import MusicSystemPrompts
 from app.domain.music.repository import IMusicGenerationSessionRepository
 from app.domain.music.value_objects import (
     AbcNotation,
-    ChordProgression,
-    GenerationRequest,
-    InstrumentSpec,
-    MusicalKey,
-    NotationFormat,
-    PersonaId,
     RefinementMessage,
     SessionId,
 )
+from app.shared.enums import MusicFeature
 
 
 class MusicService:
@@ -32,42 +28,38 @@ class MusicService:
         self,
         session_repo: IMusicGenerationSessionRepository,
         persona_catalog: IPersonaCatalog,
-        music_adapter: IGeminiMusicAdapter,
+        music_adapter: IMusicAdapter,
     ):
         self._repo = session_repo
         self._catalog = persona_catalog
         self._ai = music_adapter
 
     async def start_session(self, cmd: StartMusicGenerationCommand) -> MusicSessionDTO:
-        key = MusicalKey(cmd.key)
-        progression = ChordProgression(cmd.progression)
-        persona_id = PersonaId(cmd.persona_id)
-        output_format = NotationFormat(cmd.output_format)
+        feature = MusicFeature(cmd.feature)
+        request = MusicSessionFactory.create_feature(feature, {
+            "key": cmd.key,
+            "progression": cmd.progression,
+            "bars_count": cmd.bars_count,
+            "persona_id": cmd.persona_id,
+            "extra_note": cmd.extra_note,
+            "output_format": cmd.output_format,
+        })
 
-        persona = await self._catalog.get(persona_id)
-
-        request = GenerationRequest(
-            key=key,
-            progression=progression,
-            bars_count=cmd.bars_count,
-            instrument=InstrumentSpec(persona_id=persona_id, extra_note=cmd.extra_note),
-            output_format=output_format,
-        )
-
-        session = MusicGenerationSession.new(SessionId(str(uuid4())), request)
+        persona = await self._catalog.get(request.instrument.persona_id)
+        session = MusicGenerationSession.new(SessionId(str(uuid4())), feature, request)
 
         ctx = WalkingLineContext(
-            key=key,
-            progression=progression,
-            bars_count=cmd.bars_count,
+            key=request.key,
+            progression=request.progression,
+            bars_count=request.bars_count,
             instrument_prompt=persona.prompt_fragment,
-            extra_note=cmd.extra_note,
+            extra_note=request.instrument.extra_note,
             prior_versions=[],
             latest_refinement=None,
         )
         raw = await self._ai.generate_walking_line(
             ctx=ctx,
-            system_prompt=MusicSystemPrompts.walking_line_with_key(key),
+            system_prompt=MusicSystemPrompts.walking_line_with_key(request.key),
         )
 
         notation = AbcNotation(raw.abc_notation) if raw.abc_notation else None
@@ -82,20 +74,20 @@ class MusicService:
             raise ValueError(f"session {cmd.session_id} not found")
 
         refinement = RefinementMessage(text=cmd.refinement_text)
-        persona = await self._catalog.get(session.original_request.instrument.persona_id)
+        persona = await self._catalog.get(session.request.instrument.persona_id)
 
         ctx = WalkingLineContext(
-            key=session.original_request.key,
-            progression=session.original_request.progression,
-            bars_count=session.original_request.bars_count,
+            key=session.request.key,
+            progression=session.request.progression,
+            bars_count=session.request.bars_count,
             instrument_prompt=persona.prompt_fragment,
-            extra_note=session.original_request.instrument.extra_note,
+            extra_note=session.request.instrument.extra_note,
             prior_versions=session.prior_versions_for_ai(),
             latest_refinement=refinement.text,
         )
         raw = await self._ai.generate_walking_line(
             ctx=ctx,
-            system_prompt=MusicSystemPrompts.walking_line_with_key(session.original_request.key),
+            system_prompt=MusicSystemPrompts.walking_line_with_key(session.request.key),
         )
 
         notation = AbcNotation(raw.abc_notation) if raw.abc_notation else None
@@ -117,10 +109,11 @@ class MusicService:
 
 
 def _to_dto(session: MusicGenerationSession) -> MusicSessionDTO:
-    req = session.original_request
+    req = session.request
     return MusicSessionDTO(
         session_id=session.session_id.value,
-        original_request=GenerationRequestDTO(
+        feature=session.feature.value,
+        request=WalkingBassRequestDTO(
             key=req.key.value,
             progression=req.progression.raw,
             bars_count=req.bars_count,
