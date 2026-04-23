@@ -26,10 +26,12 @@ class MusicPiece:
     generated_from: RefinementMessage | None = None
 
 # 進行中 => 改成通用 aggregate
+
+
 @dataclass
 class MusicGenerationSession:
     session_id: SessionId
-    feature: MusicFeature # 當作 original rq 依據
+    feature: MusicFeature  # 當作 original rq 依據
     pieces: list[MusicPiece]
     refinements: list[RefinementMessage]
     created_at: datetime
@@ -40,29 +42,31 @@ class MusicGenerationSession:
     @classmethod
     def new(
         cls,
-        session_id: SessionId,
-        feature: MusicFeature
+        id: SessionId,
+        feature: MusicFeature,
+        piece: MusicPiece,
     ) -> "MusicGenerationSession":
         now = datetime.utcnow()
         return cls(
-            session_id=session_id,
+            session_id=id,
             feature=feature,
-            pieces=[],
+            pieces=[piece],
             refinements=[],
             created_at=now,
             last_active_at=now,
         )
-    
+
     def add_initial_piece(
         self,
         bars: list[Bar],
         notation: AbcNotation | None,
     ) -> MusicPiece:
         if self.pieces:
-            raise ValueError("initial piece already exists; use add_refinement_and_piece")
+            raise ValueError(
+                "initial piece already exists; use add_refinement_and_piece")
         piece = MusicPiece(
             piece_id=str(uuid4()),
-            version=1,
+            version=10,  # 改成 + 1
             bars=bars,
             notation=notation,
             # output_format=self.request.output_format,

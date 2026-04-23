@@ -4,7 +4,7 @@ import json
 from google import genai
 from google.genai import types
 
-from app.application.ports import IMusicAdapter, WalkingLineContext
+from app.application.ports import IMusicAdapter, MusicGenerationContext
 
 WALKING_LINE_SCHEMA = {
     "type": "object",
@@ -47,7 +47,30 @@ class GeminiMusicAdapter(IMusicAdapter):
 
     async def generate_walking_line(
         self,
-        ctx: WalkingLineContext,
+        ctx: MusicGenerationContext,
+        system_prompt: str,
+    ) -> str:
+        try:
+            response = await asyncio.wait_for(
+                self._client.aio.models.generate_content(
+                    model=self._model,
+                    contents=_build_prompt(ctx),
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                        response_mime_type="application/json",
+                        response_schema=WALKING_LINE_SCHEMA,
+                    ),
+                ),
+                timeout=15,
+            )
+            return response.text
+        except Exception:
+            print("[GeminiMusicAdapter] failed, returning fallback data")
+            return FALLBACK_JSON
+
+    async def generate(
+        self,
+        ctx: MusicGenerationContext,
         system_prompt: str,
     ) -> str:
         try:
@@ -69,15 +92,16 @@ class GeminiMusicAdapter(IMusicAdapter):
             return FALLBACK_JSON
 
 
-def _build_prompt(ctx: WalkingLineContext) -> str:
+def _build_prompt(ctx: MusicGenerationContext) -> str:
+    feature = ctx.feature
     lines = [
         f"生成一個 jazz bass walking line，"
-        f"調性 {ctx.key.value}，和弦進行 {ctx.progression.raw}，{ctx.bars_count} 小節。"
+        f"調性 {feature.key.value}，和弦進行 {feature.progression.raw}，{feature.bars_count} 小節。"
     ]
     if ctx.instrument_prompt:
         lines.append(f"風格指示：{ctx.instrument_prompt}")
-    if ctx.extra_note:
-        lines.append(f"額外要求：{ctx.extra_note}")
+    if feature.instrument.extra_note:
+        lines.append(f"額外要求：{feature.instrument.extra_note}")
     if ctx.prior_versions:
         lines.append("以下是先前的版本（最新版在最後）：")
         for idx, version_bars in enumerate(ctx.prior_versions, start=1):
@@ -88,6 +112,6 @@ def _build_prompt(ctx: WalkingLineContext) -> str:
     if ctx.latest_refinement:
         lines.append(f"使用者要求修改：{ctx.latest_refinement}")
         lines.append(
-            f"請基於最後一版做出對應修改，重新輸出完整 {ctx.bars_count} 小節。"
+            f"請基於最後一版做出對應修改，重新輸出完整 {feature.bars_count} 小節。"
         )
     return "\n".join(lines)

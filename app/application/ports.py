@@ -2,16 +2,13 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from app.domain.conversation.entities import Message
-from app.domain.music.value_object import Bar, ChordProgression, MusicalKey
+from app.domain.music.value_object import Bar, MusicFeature
 
 
 @dataclass(frozen=True)
-class WalkingLineContext:
-    key: MusicalKey
-    progression: ChordProgression
-    bars_count: int
+class MusicGenerationContext:
+    feature: MusicFeature
     instrument_prompt: str
-    extra_note: str
     prior_versions: list[list[Bar]]
     latest_refinement: str | None
 
@@ -29,6 +26,13 @@ class IMusicAdapter(ABC):
     @abstractmethod
     async def generate_walking_line(
         self,
-        ctx: WalkingLineContext,
+        ctx: MusicGenerationContext,
+        system_prompt: str,
+    ) -> str: ...
+
+    @abstractmethod
+    async def generate(
+        self,
+        ctx: MusicGenerationContext,
         system_prompt: str,
     ) -> str: ...

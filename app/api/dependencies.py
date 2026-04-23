@@ -7,6 +7,7 @@ from google import genai
 from app.application.chat.chat_service import ChatService
 from app.application.music.music_service import MusicService
 from app.application.music.ports import IPersonaCatalog
+from app.domain.music.services import PromptBuilderService
 from app.infrastructure.ai.gemini_chat_adapter import GeminiChatAdapter
 from app.infrastructure.ai.gemini_music_adapter import GeminiMusicAdapter
 from app.infrastructure.catalog.json_persona_catalog import JsonPersonaCatalog
@@ -56,4 +57,5 @@ def get_music_service() -> MusicService:
         session_repo=RedisMusicSessionRepository(get_redis_client()),
         persona_catalog=get_persona_catalog(),
         music_adapter=GeminiMusicAdapter(get_genai_client(), settings.gemini_model),
+        prompt_builder=PromptBuilderService(),
     )

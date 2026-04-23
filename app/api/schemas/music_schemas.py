@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class StartSessionRequest(BaseModel):
+    feature: str = "walking_bass"
     key: str
     progression: str
     bars_count: int = Field(ge=4, le=16)

@@ -30,6 +30,7 @@ async def start_session(
     try:
         dto = await service.start_session(
             StartMusicGenerationCommand(
+                feature=req.feature,
                 key=req.key,
                 progression=req.progression,
                 bars_count=req.bars_count,
@@ -104,12 +105,12 @@ def _to_response(dto: MusicSessionDTO) -> MusicSessionResponse:
     return MusicSessionResponse(
         session_id=dto.session_id,
         original_request=GenerationRequestOut(
-            key=dto.original_request.key,
-            progression=dto.original_request.progression,
-            bars_count=dto.original_request.bars_count,
-            persona_id=dto.original_request.persona_id,
-            extra_note=dto.original_request.extra_note,
-            output_format=dto.original_request.output_format,
+            key=dto.request.key,
+            progression=dto.request.progression,
+            bars_count=dto.request.bars_count,
+            persona_id=dto.request.persona_id,
+            extra_note=dto.request.extra_note,
+            output_format=dto.request.output_format,
         ),
         pieces=[
             PieceOut(

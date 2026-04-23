@@ -11,10 +11,11 @@ from app.application.music.dtos import (
     WalkingBassRequestDTO,
 )
 from app.application.music.ports import IPersonaCatalog
-from app.application.ports import IMusicAdapter, WalkingLineContext
+from app.application.ports import IMusicAdapter, MusicGenerationContext
 from app.domain.music.entities import MusicGenerationSession
 from app.domain.music.prompts import MusicSystemPrompts
 from app.domain.music.repository import IMusicGenerationSessionRepository
+from app.domain.music.services import PromptBuilderService
 from app.domain.music.value_object import (
     AbcNotation,
     Bar,
@@ -35,17 +36,19 @@ class MusicService:
         session_repo: IMusicGenerationSessionRepository,
         persona_catalog: IPersonaCatalog,
         music_adapter: IMusicAdapter,
+        prompt_builder: PromptBuilderService,
     ):
         self._repo = session_repo
         self._catalog = persona_catalog
         self._ai = music_adapter
+        self._prompt_builder = prompt_builder
 
     async def start_session(self, cmd: StartMusicGenerationCommand) -> MusicSessionDTO:
-        feature = MusicFeatureType(cmd.feature)
-        match feature:
+
+        match MusicFeatureType(cmd.feature):
             case MusicFeatureType.WALKING_BASS:
-                request = WalkingBassFeature(
-                    type=feature,
+                feature = WalkingBassFeature(
+                    type=MusicFeatureType(cmd.feature),
                     key=MusicalKey(cmd.key),
                     progression=ChordProgression(cmd.progression),
                     bars_count=cmd.bars_count,
@@ -55,18 +58,20 @@ class MusicService:
                     ),
                 )
             case _:
-                raise ValueError(f"unsupported feature: {feature}")
+                raise ValueError(f"unsupported feature: {cmd.feature}")
 
-        # 之後抽像常數出來
-        session = MusicGenerationSession.new(SessionId(str(uuid4())), request)
-        ctx = session.build_prompt()
+        persona = await self._catalog.get(feature.instrument.persona_id)
+        ctx = self._prompt_builder.build_context(
+            feature, persona.prompt_fragment)
+        session_id = SessionId(str(uuid4()))
 
-        raw_str = await self._ai.generate_walking_line(
+        raw = await self._ai.generate(
             ctx=ctx,
-            system_prompt=MusicSystemPrompts.walking_line_with_key(request.key),
+            system_prompt="temp",
         )
-        bars, notation = _parse_walking_line(raw_str)
-        session.add_initial_piece(bars=bars, notation=notation)
+
+        piece = self._prompt_builder.parse_piece(feature, raw)
+        session = MusicGenerationSession.new(session_id, feature, piece)
         await self._repo.save(session)
 
         return _to_dto(session)
@@ -77,24 +82,22 @@ class MusicService:
             raise ValueError(f"session {cmd.session_id} not found")
 
         refinement = RefinementMessage(text=cmd.refinement_text)
-        params = session.feature.build_prompt_params()
-        persona = await self._catalog.get(params["persona_id"])
-
-        ctx = WalkingLineContext(
-            key=params["key"],
-            progression=params["progression"],
-            bars_count=params["bars_count"],
+        persona = await self._catalog.get(session.feature.instrument.persona_id)
+        ctx = self._prompt_builder.build_context(
+            feature=session.feature,
             instrument_prompt=persona.prompt_fragment,
-            extra_note=params["extra_note"],
             prior_versions=session.prior_versions_for_ai(),
             latest_refinement=refinement.text,
         )
+
         raw_str = await self._ai.generate_walking_line(
             ctx=ctx,
-            system_prompt=MusicSystemPrompts.walking_line_with_key(session.feature.key),
+            system_prompt=MusicSystemPrompts.walking_line_with_key(
+                session.feature.key),
         )
         bars, notation = _parse_walking_line(raw_str)
-        session.add_refinement_and_piece(refinement=refinement, bars=bars, notation=notation)
+        session.add_refinement_and_piece(
+            refinement=refinement, bars=bars, notation=notation)
         await self._repo.save(session)
 
         return _to_dto(session)
@@ -115,7 +118,8 @@ def _parse_walking_line(raw_str: str) -> tuple[list[Bar], AbcNotation | None]:
         Bar(chord=b["chord"], notes=[Note(pitch=n) for n in b["notes"]])
         for b in data["bars"]
     ]
-    notation = AbcNotation(data["abc_notation"]) if data.get("abc_notation") else None
+    notation = AbcNotation(data["abc_notation"]) if data.get(
+        "abc_notation") else None
     return bars, notation
 
 
@@ -136,7 +140,8 @@ def _to_dto(session: MusicGenerationSession) -> MusicSessionDTO:
             PieceDTO(
                 piece_id=p.piece_id,
                 version=p.version,
-                bars=[BarDTO(chord=b.chord, notes=[n.pitch for n in b.notes]) for b in p.bars],
+                bars=[BarDTO(chord=b.chord, notes=[n.pitch for n in b.notes])
+                      for b in p.bars],
                 notation=p.notation.notation if p.notation else None,
                 generated_from=p.generated_from.text if p.generated_from else None,
                 created_at=p.created_at,
