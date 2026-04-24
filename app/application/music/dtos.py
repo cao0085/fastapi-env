@@ -30,6 +30,7 @@ class PieceDTO:
     piece_id: str
     version: int
     bars: list[BarDTO]
+    notation: str | None
     generated_from: str | None
     created_at: datetime
 

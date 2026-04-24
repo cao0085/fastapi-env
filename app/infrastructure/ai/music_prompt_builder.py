@@ -55,6 +55,7 @@ class MusicPromptBuilder(IMusicPromptBuilder):
             piece_id=str(uuid4()),
             version=0,
             bars=bars,
+            notation=data.get("abc_notation"),
             created_at=datetime.utcnow(),
         )
 

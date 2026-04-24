@@ -115,6 +115,7 @@ def _to_response(dto: MusicSessionDTO) -> MusicSessionResponse:
                 piece_id=p.piece_id,
                 version=p.version,
                 bars=[BarOut(chord=b.chord, notes=b.notes) for b in p.bars],
+                notation=p.notation,
                 generated_from=p.generated_from,
                 created_at=p.created_at,
             )

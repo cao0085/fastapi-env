@@ -26,15 +26,8 @@ class IChatAdapter(ABC):
 
 class IMusicAdapter(ABC):
     @abstractmethod
-    async def generate_walking_line(
-        self,
-        ctx: MusicGenerationContext,
-        system_prompt: str,
-    ) -> str: ...
-
-    @abstractmethod
     async def generate(
         self,
-        ctx: MusicGenerationContext,
         system_prompt: str,
+        ctx: MusicGenerationContext,
     ) -> str: ...

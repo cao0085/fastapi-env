@@ -8,7 +8,7 @@ class StartSessionRequest(BaseModel):
     key: str
     progression: str
     bars_count: int = Field(ge=4, le=16)
-    persona_id: str
+    persona_id: str = Field(min_length=1)
     extra_note: str = ""
     output_format: str = "abc"
 
@@ -26,6 +26,7 @@ class PieceOut(BaseModel):
     piece_id: str
     version: int
     bars: list[BarOut]
+    notation: str | None
     generated_from: str | None
     created_at: datetime
 

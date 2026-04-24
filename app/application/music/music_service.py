@@ -111,6 +111,7 @@ def _to_dto(session: MusicGenerationSession) -> MusicSessionDTO:
                 version=p.version,
                 bars=[BarDTO(chord=b.chord, notes=[n.pitch for n in b.notes])
                       for b in p.bars],
+                notation=p.notation,
                 generated_from=p.generated_from.text if p.generated_from else None,
                 created_at=p.created_at,
             )

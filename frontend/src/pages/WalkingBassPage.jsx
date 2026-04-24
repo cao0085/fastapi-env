@@ -33,7 +33,7 @@ export default function WalkingBassPage() {
         setPersonas(data)
         if (data.length > 0) setForm(f => ({ ...f, persona_id: data[0].persona_id }))
       })
-      .catch(() => {})
+      .catch(err => console.error('personas fetch failed:', err))
   }, [])
   const [session, setSession] = useState(null)
   const [currentPieceIdx, setCurrentPieceIdx] = useState(0)

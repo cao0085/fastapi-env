@@ -18,6 +18,7 @@ class MusicPiece:
     piece_id: str
     version: int
     bars: list[Bar]
+    notation: str | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
     generated_from: RefinementMessage | None = None
 

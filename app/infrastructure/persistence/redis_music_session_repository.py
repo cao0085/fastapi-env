@@ -93,6 +93,7 @@ def _serialize_piece(p: MusicPiece) -> dict:
         "bars": [
             {"chord": b.chord, "notes": [n.pitch for n in b.notes]} for b in p.bars
         ],
+        "notation": p.notation,
         "created_at": p.created_at.isoformat(),
         "generated_from": (
             {
@@ -113,6 +114,7 @@ def _deserialize_piece(d: dict) -> MusicPiece:
             Bar(chord=b["chord"], notes=[Note(pitch=n) for n in b["notes"]])
             for b in d["bars"]
         ],
+        notation=d.get("notation"),
         created_at=datetime.fromisoformat(d["created_at"]),
         generated_from=(
             RefinementMessage(

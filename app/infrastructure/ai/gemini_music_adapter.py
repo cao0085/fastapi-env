@@ -32,16 +32,36 @@ _OUTPUT_SCHEMAS: dict[tuple[MusicFeatureType, NotationFormat], dict] = {
     (MusicFeatureType.WALKING_BASS, NotationFormat.ABC): GEMINI_WALKING_LINE_SCHEMA,
 }
 
-FALLBACK_JSON = json.dumps({
-    "key": "C",
-    "progression": "Dm7-G7-Cmaj7",
+_STUB_GENERATE = json.dumps({
+    "key": "F",
+    "progression": "Bb-F-C7-F-Bb-F-C7-F",
     "bars": [
-        {"chord": "Dm7",   "notes": ["D", "F", "A", "C"]},
-        {"chord": "G7",    "notes": ["G", "B", "D", "F"]},
-        {"chord": "Cmaj7", "notes": ["C", "E", "G", "B"]},
-        {"chord": "Cmaj7", "notes": ["C", "D", "E", "G"]},
+        {"chord": "Bb",  "notes": ["Bb", "F", "G", "Ab"]},
+        {"chord": "F",   "notes": ["F", "A", "C", "B"]},
+        {"chord": "C7",  "notes": ["C", "G", "Gb", "F"]},
+        {"chord": "F",   "notes": ["F", "A", "Bb", "B"]},
+        {"chord": "Bb",  "notes": ["Bb", "G", "Gb", "F"]},
+        {"chord": "F",   "notes": ["F", "C", "D", "Db"]},
+        {"chord": "C7",  "notes": ["C", "Bb", "G", "Gb"]},
+        {"chord": "F",   "notes": ["F", "C", "F", "F"]},
     ],
-    "abc_notation": "X:1\nT:Fallback ii-V-I\nM:4/4\nL:1/4\nK:C\n|D F A c|G B d f|C E G B|C D E G|",
+    "abc_notation": "X:1\nT:Bebop Walking Bass Line\nM:4/4\nL:1/4\nK:F\n_B, F, G, _A, | F, A, C B, | C, G, _G, F, | F, A, _B, . B,/2 | _B, G, _G, F, | F, C D _D | C, _B, G, _G, | F, C, F, z ||",
+})
+
+_STUB_REFINE = json.dumps({
+    "key": "F",
+    "progression": "Bb-F-C7-F-Bb-F-C7-F",
+    "bars": [
+        {"chord": "Bb",  "notes": ["Bb", "F", "G", "Gb"]},
+        {"chord": "F",   "notes": ["F", "A", "C", "B"]},
+        {"chord": "C7",  "notes": ["C", "G", "Gb", "E"]},
+        {"chord": "F",   "notes": ["F", "A", "C", "B"]},
+        {"chord": "Bb",  "notes": ["Bb", "F", "G", "Gb"]},
+        {"chord": "F",   "notes": ["F", "A", "C", "B"]},
+        {"chord": "C7",  "notes": ["C", "G", "Gb", "E"]},
+        {"chord": "F",   "notes": ["F", "C", "A", "F"]},
+    ],
+    "abc_notation": "X:1\nT:Bebop Walking Bass Line\nM:4/4\nL:1/4\nK:F\n_B, F, G, _G, | F, A, C B, | C, G, _G, E, | F, A, C B, | _B, F, G, _G, | F, A, C B, | C, G, _G, E, | F, C, A, F, ||",
 })
 
 
@@ -55,8 +75,8 @@ class GeminiMusicAdapter(IMusicAdapter):
         system_prompt: str,
         ctx: MusicGenerationContext,
     ) -> str:
+        return _STUB_REFINE if ctx.latest_refinement else _STUB_GENERATE
         schema = _OUTPUT_SCHEMAS[(ctx.feature.type, ctx.output_format)]
-        return FALLBACK_JSON
         try:
             response = await asyncio.wait_for(
                 self._client.aio.models.generate_content(
