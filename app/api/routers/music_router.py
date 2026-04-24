@@ -8,7 +8,6 @@ from app.api.schemas.music_schemas import (
     PersonaOut,
     PieceOut,
     RefineRequest,
-    RefinementOut,
     StartSessionRequest,
 )
 from app.application.music.dtos import (
@@ -17,6 +16,7 @@ from app.application.music.dtos import (
     StartMusicGenerationCommand,
 )
 from app.application.music.music_service import MusicService
+
 router = APIRouter(prefix="/music", tags=["music"])
 
 
@@ -115,13 +115,11 @@ def _to_response(dto: MusicSessionDTO) -> MusicSessionResponse:
                 piece_id=p.piece_id,
                 version=p.version,
                 bars=[BarOut(chord=b.chord, notes=b.notes) for b in p.bars],
-                notation=p.notation,
                 generated_from=p.generated_from,
                 created_at=p.created_at,
             )
             for p in dto.pieces
         ],
-        refinements=[RefinementOut(text=r.text, created_at=r.created_at) for r in dto.refinements],
         created_at=dto.created_at,
         last_active_at=dto.last_active_at,
     )

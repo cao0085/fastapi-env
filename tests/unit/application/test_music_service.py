@@ -1,3 +1,4 @@
+import json
 from unittest.mock import AsyncMock, MagicMock
 import pytest
 
@@ -6,8 +7,32 @@ from app.application.music.dtos import (
     StartMusicGenerationCommand,
 )
 from app.application.music.music_service import MusicService
-from app.application.ports import WalkingLineRawResult
-from app.domain.music.value_objects import Bar, Note
+from app.domain.music.entities import MusicGenerationSession, MusicPiece
+from app.domain.music.value_object import (
+    Bar,
+    ChordProgression,
+    MusicFeature,
+    Note,
+    PersonaId,
+    RefinementMessage,
+    SessionId,
+)
+from app.shared.enums import MusicFeatureType, MusicalKey
+
+_RAW_RESPONSE = json.dumps({
+    "bars": [{"chord": "Dm7", "notes": ["D", "F", "A", "C"]}],
+    "abc_notation": "X:1\nT:Test\nM:4/4\nL:1/4\nK:C\nDFAC|]",
+})
+
+START_CMD = StartMusicGenerationCommand(
+    feature="walking_bass",
+    key="C",
+    progression="ii-V-I",
+    bars_count=4,
+    persona_id="ray_brown",
+    extra_note="",
+    output_format="abc",
+)
 
 
 @pytest.fixture
@@ -20,43 +45,38 @@ def mock_repo():
 
 
 @pytest.fixture
-def mock_catalog():
-    catalog = AsyncMock()
+def mock_prompt_builder():
+    builder = MagicMock()
     persona = MagicMock()
     persona.prompt_fragment = "Ray Brown style"
-    catalog.get = AsyncMock(return_value=persona)
-    return catalog
+    builder.get_persona = AsyncMock(return_value=persona)
+    builder.build_system_prompt = MagicMock(return_value="system prompt")
+    builder.build_context = MagicMock(return_value=MagicMock())
+    builder.build_refine_prompt = MagicMock(return_value=MagicMock())
+    builder.parse_piece = MagicMock(return_value=MusicPiece(
+        piece_id="p1",
+        version=1,
+        bars=[Bar(chord="Dm7", notes=[Note("D")])],
+        notation=None,
+    ))
+    builder.list_personas = AsyncMock(return_value=[])
+    return builder
 
 
 @pytest.fixture
 def mock_ai():
     ai = AsyncMock()
-    ai.generate_walking_line = AsyncMock(
-        return_value=WalkingLineRawResult(
-            bars=[Bar(chord="Dm7", notes=[Note("D"), Note("F"), Note("A"), Note("C")])],
-            abc_notation="X:1\nT:Test\nM:4/4\nL:1/4\nK:C\nDFAC|]",
-        )
-    )
+    ai.generate = AsyncMock(return_value=_RAW_RESPONSE)
     return ai
 
 
 @pytest.fixture
-def service(mock_repo, mock_catalog, mock_ai):
+def service(mock_repo, mock_prompt_builder, mock_ai):
     return MusicService(
         session_repo=mock_repo,
-        persona_catalog=mock_catalog,
         music_adapter=mock_ai,
+        prompt_builder=mock_prompt_builder,
     )
-
-
-START_CMD = StartMusicGenerationCommand(
-    key="C",
-    progression="ii-V-I",
-    bars_count=4,
-    persona_id="ray_brown",
-    extra_note="",
-    output_format="abc",
-)
 
 
 @pytest.mark.asyncio
@@ -68,15 +88,23 @@ class TestStartSession:
     async def test_returns_dto_with_piece(self, service):
         dto = await service.start_session(START_CMD)
         assert len(dto.pieces) == 1
-        assert dto.pieces[0].version == 1
-
-    async def test_notation_is_populated(self, service):
-        dto = await service.start_session(START_CMD)
-        assert dto.pieces[0].notation == "X:1\nT:Test\nM:4/4\nL:1/4\nK:C\nDFAC|]"
 
     async def test_calls_ai_adapter(self, service, mock_ai):
         await service.start_session(START_CMD)
-        mock_ai.generate_walking_line.assert_called_once()
+        mock_ai.generate.assert_called_once()
+
+    async def test_unsupported_feature_raises(self, service):
+        cmd = StartMusicGenerationCommand(
+            feature="unknown",
+            key="C",
+            progression="ii-V-I",
+            bars_count=4,
+            persona_id="ray_brown",
+            extra_note="",
+            output_format="abc",
+        )
+        with pytest.raises(ValueError, match="unsupported"):
+            await service.start_session(cmd)
 
 
 @pytest.mark.asyncio
@@ -90,39 +118,29 @@ class TestRefine:
                 )
             )
 
-    async def test_adds_new_piece_version(self, service, mock_repo, mock_ai):
-        # First create a session
-        dto = await service.start_session(START_CMD)
-        session_id = dto.session_id
-
-        # Set up repo to return the saved session on next get
-        from app.domain.music.entities import MusicGenerationSession
-        from app.domain.music.value_objects import (
-            ChordProgression, GenerationRequest, InstrumentSpec,
-            MusicalKey, NotationFormat, PersonaId, SessionId,
+    async def test_adds_new_piece_version(self, service, mock_repo, mock_prompt_builder):
+        feature = MusicFeature(
+            type=MusicFeatureType.WALKING_BASS,
+            bars_count=4,
+            key=MusicalKey.C,
+            progression=ChordProgression("ii-V-I"),
+            persona_id=PersonaId("ray_brown"),
         )
-        session = MusicGenerationSession.new(
-            SessionId(session_id),
-            GenerationRequest(
-                key=MusicalKey.C,
-                progression=ChordProgression("ii-V-I"),
-                bars_count=4,
-                instrument=InstrumentSpec(persona_id=PersonaId("ray_brown")),
-                output_format=NotationFormat.ABC,
-            ),
-        )
-        session.add_initial_piece(
-            bars=[Bar(chord="Dm7", notes=[Note("D")])], notation=None
-        )
+        init_piece = MusicPiece(piece_id="p1", version=1, bars=[], notation=None)
+        session = MusicGenerationSession.new(SessionId("s1"), feature, init_piece)
         mock_repo.get = AsyncMock(return_value=session)
 
+        mock_prompt_builder.parse_piece = MagicMock(return_value=MusicPiece(
+            piece_id="p2",
+            version=2,
+            bars=[Bar(chord="Dm7", notes=[Note("D")])],
+            notation=None,
+        ))
+
         dto = await service.refine(
-            RefineMusicGenerationCommand(
-                session_id=session_id, refinement_text="第四小節更流暢"
-            )
+            RefineMusicGenerationCommand(session_id="s1", refinement_text="第四小節更流暢")
         )
         assert len(dto.pieces) == 2
-        assert dto.pieces[-1].version == 2
 
 
 @pytest.mark.asyncio

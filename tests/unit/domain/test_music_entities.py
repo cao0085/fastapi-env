@@ -2,30 +2,34 @@ import pytest
 from datetime import datetime
 
 from app.domain.music.entities import MusicGenerationSession
-from app.domain.music.value_objects import (
+from app.domain.music.value_object import (
     AbcNotation,
     Bar,
     ChordProgression,
-    GenerationRequest,
-    InstrumentSpec,
-    MusicalKey,
+    MusicFeature,
     Note,
-    NotationFormat,
     PersonaId,
     RefinementMessage,
     SessionId,
 )
+from app.shared.enums import MusicFeatureType, MusicalKey
+
+
+def _make_feature() -> MusicFeature:
+    return MusicFeature(
+        type=MusicFeatureType.WALKING_BASS,
+        bars_count=4,
+        key=MusicalKey.C,
+        progression=ChordProgression("ii-V-I"),
+        persona_id=PersonaId("ray_brown"),
+    )
 
 
 def _make_session() -> MusicGenerationSession:
-    request = GenerationRequest(
-        key=MusicalKey.C,
-        progression=ChordProgression("ii-V-I"),
-        bars_count=4,
-        instrument=InstrumentSpec(persona_id=PersonaId("ray_brown")),
-        output_format=NotationFormat.ABC,
-    )
-    return MusicGenerationSession.new(SessionId("test-session"), request)
+    from app.domain.music.entities import MusicPiece
+    feature = _make_feature()
+    piece = MusicPiece(piece_id="init", version=1, bars=[], notation=None)
+    return MusicGenerationSession.new(SessionId("test-session"), feature, piece)
 
 
 def _make_bars() -> list[Bar]:
@@ -36,29 +40,13 @@ def _make_notation() -> AbcNotation:
     return AbcNotation("X:1\nT:Test\nM:4/4\nL:1/4\nK:C\nDFAC|]")
 
 
-class TestAddInitialPiece:
-    def test_adds_piece_with_version_1(self):
-        session = _make_session()
-        piece = session.add_initial_piece(bars=_make_bars(), notation=None)
-        assert piece.version == 1
-        assert len(session.pieces) == 1
-
-    def test_raises_if_called_twice(self):
-        session = _make_session()
-        session.add_initial_piece(bars=_make_bars(), notation=None)
-        with pytest.raises(ValueError, match="initial piece already exists"):
-            session.add_initial_piece(bars=_make_bars(), notation=None)
-
-    def test_stores_notation(self):
-        session = _make_session()
-        notation = _make_notation()
-        piece = session.add_initial_piece(bars=_make_bars(), notation=notation)
-        assert piece.notation == notation
-
-
 class TestAddRefinementAndPiece:
     def test_raises_if_no_initial_piece(self):
-        session = _make_session()
+        feature = _make_feature()
+        from app.domain.music.entities import MusicPiece
+        piece = MusicPiece(piece_id="init", version=1, bars=[], notation=None)
+        session = MusicGenerationSession.new(SessionId("s"), feature, piece)
+        session.pieces.clear()
         refinement = RefinementMessage(text="第四小節更流暢")
         with pytest.raises(ValueError, match="cannot refine before initial piece"):
             session.add_refinement_and_piece(
@@ -67,7 +55,6 @@ class TestAddRefinementAndPiece:
 
     def test_increments_version(self):
         session = _make_session()
-        session.add_initial_piece(bars=_make_bars(), notation=None)
         refinement = RefinementMessage(text="第四小節更流暢")
         piece = session.add_refinement_and_piece(
             refinement=refinement, bars=_make_bars(), notation=None
@@ -78,7 +65,6 @@ class TestAddRefinementAndPiece:
 
     def test_links_piece_to_refinement(self):
         session = _make_session()
-        session.add_initial_piece(bars=_make_bars(), notation=None)
         refinement = RefinementMessage(text="半音進行")
         piece = session.add_refinement_and_piece(
             refinement=refinement, bars=_make_bars(), notation=None
@@ -88,13 +74,16 @@ class TestAddRefinementAndPiece:
 
 class TestCurrentPiece:
     def test_raises_on_empty_session(self):
-        session = _make_session()
+        feature = _make_feature()
+        from app.domain.music.entities import MusicPiece
+        piece = MusicPiece(piece_id="init", version=1, bars=[], notation=None)
+        session = MusicGenerationSession.new(SessionId("s"), feature, piece)
+        session.pieces.clear()
         with pytest.raises(ValueError, match="no pieces yet"):
             session.current_piece()
 
     def test_returns_latest_piece(self):
         session = _make_session()
-        session.add_initial_piece(bars=_make_bars(), notation=None)
         refinement = RefinementMessage(text="更多半音")
         session.add_refinement_and_piece(
             refinement=refinement, bars=_make_bars(), notation=None
@@ -105,7 +94,6 @@ class TestCurrentPiece:
 class TestPriorVersionsForAi:
     def test_trims_to_max_versions(self):
         session = _make_session()
-        session.add_initial_piece(bars=_make_bars(), notation=None)
         for i in range(MusicGenerationSession.MAX_VERSIONS):
             session.add_refinement_and_piece(
                 refinement=RefinementMessage(text=f"refinement {i}"),
@@ -117,7 +105,6 @@ class TestPriorVersionsForAi:
 
     def test_returns_all_if_within_limit(self):
         session = _make_session()
-        session.add_initial_piece(bars=_make_bars(), notation=None)
         session.add_refinement_and_piece(
             refinement=RefinementMessage(text="one refinement"),
             bars=_make_bars(),

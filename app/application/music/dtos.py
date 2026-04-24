@@ -30,14 +30,7 @@ class PieceDTO:
     piece_id: str
     version: int
     bars: list[BarDTO]
-    notation: str | None
     generated_from: str | None
-    created_at: datetime
-
-
-@dataclass
-class RefinementDTO:
-    text: str
     created_at: datetime
 
 
@@ -57,6 +50,5 @@ class MusicSessionDTO:
     feature: str
     request: WalkingBassRequestDTO
     pieces: list[PieceDTO]
-    refinements: list[RefinementDTO]
     created_at: datetime
     last_active_at: datetime

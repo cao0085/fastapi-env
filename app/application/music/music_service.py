@@ -6,7 +6,6 @@ from app.application.music.dtos import (
     MusicSessionDTO,
     PieceDTO,
     RefineMusicGenerationCommand,
-    RefinementDTO,
     StartMusicGenerationCommand,
     WalkingBassRequestDTO,
 )
@@ -14,18 +13,12 @@ from app.application.music.prompt_builder import IMusicPromptBuilder, PersonaEnt
 from app.application.ports import IMusicAdapter
 from app.domain.music.entities import MusicGenerationSession
 from app.domain.music.repository import IMusicGenerationSessionRepository
+from app.domain.music.services import MusicFeatureFactory
 from app.domain.music.value_object import (
-    AbcNotation,
     Bar,
-    ChordProgression,
-    InstrumentSpec,
     Note,
-    PersonaId,
-    RefinementMessage,
     SessionId,
-    WalkingBassFeature,
 )
-from app.shared.enums import MusicFeatureType, MusicalKey, NotationFormat
 
 
 class MusicService:
@@ -40,39 +33,18 @@ class MusicService:
         self._prompt_builder = prompt_builder
 
     async def start_session(self, cmd: StartMusicGenerationCommand) -> MusicSessionDTO:
-        output_format = NotationFormat(cmd.output_format)
+        feature = MusicFeatureFactory.from_command(cmd)
 
-        match MusicFeatureType(cmd.feature):
-            case MusicFeatureType.WALKING_BASS:
-                feature = WalkingBassFeature(
-                    type=MusicFeatureType(cmd.feature),
-                    key=MusicalKey(cmd.key),
-                    progression=ChordProgression(cmd.progression),
-                    bars_count=cmd.bars_count,
-                    instrument=InstrumentSpec(
-                        persona_id=PersonaId(cmd.persona_id),
-                        extra_note=cmd.extra_note,
-                    ),
-                )
-            case _:
-                raise ValueError(f"unsupported feature: {cmd.feature}")
-
-        persona = await self._prompt_builder.get_persona(feature.instrument.persona_id)
         system_prompt = self._prompt_builder.build_system_prompt(
-            feature.type, feature.key, output_format
+            feature.type, feature.output_format
         )
-        ctx = self._prompt_builder.build_context(
-            feature, persona.prompt_fragment, output_format
-        )
-        session_id = SessionId(str(uuid4()))
+        ctx = await self._prompt_builder.build_context(feature)
 
-        raw = await self._ai.generate(
-            system_prompt=system_prompt,
-            ctx=ctx,
-        )
+        raw = await self._ai.generate(system_prompt=system_prompt, ctx=ctx)
 
         piece = self._prompt_builder.parse_piece(feature, raw)
-        session = MusicGenerationSession.new(session_id, feature, piece)
+        session = MusicGenerationSession.new(
+            SessionId(str(uuid4())), feature, piece)
         await self._repo.save(session)
 
         return _to_dto(session)
@@ -82,26 +54,19 @@ class MusicService:
         if session is None:
             raise ValueError(f"session {cmd.session_id} not found")
 
-        current_piece = session.current_piece()
-        output_format = NotationFormat(current_piece.output_format or NotationFormat.ABC)
-        persona = await self._prompt_builder.get_persona(session.feature.instrument.persona_id)
+        feature = session.feature
         system_prompt = self._prompt_builder.build_system_prompt(
-            session.feature.type, session.feature.key, output_format
+            feature.type, feature.output_format
         )
-        ctx = self._prompt_builder.build_refine_prompt(
-            feature=session.feature,
-            instrument_prompt=persona.prompt_fragment,
-            output_format=output_format,
-            current_piece=current_piece,
+        ctx = await self._prompt_builder.build_refine_prompt(
+            feature=feature,
+            current_piece=session.current_piece(),
             refinement_text=cmd.refinement_text,
         )
-        raw_str = await self._ai.generate_walking_line(
-            ctx=ctx,
-            system_prompt=system_prompt,
-        )
-        bars, notation = _parse_walking_line(raw_str)
-        refinement = RefinementMessage(text=cmd.refinement_text)
-        session.add_refinement_and_piece(refinement=refinement, bars=bars, notation=notation)
+
+        raw = await self._ai.generate(system_prompt=system_prompt, ctx=ctx)
+        piece = self._prompt_builder.parse_piece(feature, raw)
+        session.add_piece(piece, cmd.refinement_text)
         await self._repo.save(session)
 
         return _to_dto(session)
@@ -119,15 +84,12 @@ class MusicService:
         return await self._prompt_builder.list_personas()
 
 
-def _parse_walking_line(raw_str: str) -> tuple[list[Bar], AbcNotation | None]:
+def _parse_bars(raw_str: str) -> list[Bar]:
     data = json.loads(raw_str)
-    bars = [
+    return [
         Bar(chord=b["chord"], notes=[Note(pitch=n) for n in b["notes"]])
         for b in data["bars"]
     ]
-    notation = AbcNotation(data["abc_notation"]) if data.get(
-        "abc_notation") else None
-    return bars, notation
 
 
 def _to_dto(session: MusicGenerationSession) -> MusicSessionDTO:
@@ -136,12 +98,12 @@ def _to_dto(session: MusicGenerationSession) -> MusicSessionDTO:
         session_id=session.session_id.value,
         feature=session.feature.type.value,
         request=WalkingBassRequestDTO(
-            key=req.key.value,
-            progression=req.progression.raw,
+            key=req.key.value if req.key else "",
+            progression=req.progression.raw if req.progression else "",
             bars_count=req.bars_count,
-            persona_id=req.instrument.persona_id.value,
-            extra_note=req.instrument.extra_note,
-            output_format="abc",
+            persona_id=req.persona_id.value if req.persona_id else "",
+            extra_note=req.extra_note,
+            output_format=req.output_format.value,
         ),
         pieces=[
             PieceDTO(
@@ -149,14 +111,10 @@ def _to_dto(session: MusicGenerationSession) -> MusicSessionDTO:
                 version=p.version,
                 bars=[BarDTO(chord=b.chord, notes=[n.pitch for n in b.notes])
                       for b in p.bars],
-                notation=p.notation.notation if p.notation else None,
                 generated_from=p.generated_from.text if p.generated_from else None,
                 created_at=p.created_at,
             )
             for p in session.pieces
-        ],
-        refinements=[
-            RefinementDTO(text=r.text, created_at=r.created_at) for r in session.refinements
         ],
         created_at=session.created_at,
         last_active_at=session.last_active_at,

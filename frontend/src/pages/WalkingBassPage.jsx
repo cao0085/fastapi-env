@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import AbcRenderer from '../components/AbcRenderer'
 import { apiFetch } from '../lib/api'
@@ -16,14 +16,25 @@ const FEELS = [
 
 export default function WalkingBassPage() {
   const { slot } = useSidebarSlot()
+  const [personas, setPersonas] = useState([])
   const [form, setForm] = useState({
     key: 'F',
     progression: 'Bb-F-C7-F',
     bars_count: 8,
+    persona_id: '',
     tempo: 120,
     feel: 'swing',
     extra_note: '',
   })
+
+  useEffect(() => {
+    apiFetch('/music/personas')
+      .then(data => {
+        setPersonas(data)
+        if (data.length > 0) setForm(f => ({ ...f, persona_id: data[0].persona_id }))
+      })
+      .catch(() => {})
+  }, [])
   const [session, setSession] = useState(null)
   const [currentPieceIdx, setCurrentPieceIdx] = useState(0)
   const [refinementText, setRefinementText] = useState('')
@@ -93,12 +104,12 @@ export default function WalkingBassPage() {
       <div className="field">
         <label>小節數 ({form.bars_count})</label>
         <input
-          type="range" min={4} max={32}
+          type="range" min={4} max={16}
           value={form.bars_count}
           onChange={e => setField('bars_count', Number(e.target.value))}
           className="range-input"
         />
-        <div className="range-labels"><span>4</span><span>32</span></div>
+        <div className="range-labels"><span>4</span><span>16</span></div>
       </div>
       <div className="field">
         <label>速度 BPM ({form.tempo})</label>
@@ -115,6 +126,19 @@ export default function WalkingBassPage() {
         <select value={form.feel} onChange={e => setField('feel', e.target.value)}>
           {FEELS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
         </select>
+      </div>
+      <div className="field">
+        <label>風格 / Persona</label>
+        <select value={form.persona_id} onChange={e => setField('persona_id', e.target.value)}>
+          {personas.map(p => (
+            <option key={p.persona_id} value={p.persona_id}>
+              {p.display_name} — {p.era}
+            </option>
+          ))}
+        </select>
+        {personas.find(p => p.persona_id === form.persona_id) && (
+          <p className="hint">{personas.find(p => p.persona_id === form.persona_id).style}</p>
+        )}
       </div>
       <div className="field">
         <label>額外要求（選填）</label>

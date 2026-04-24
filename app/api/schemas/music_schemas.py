@@ -26,13 +26,7 @@ class PieceOut(BaseModel):
     piece_id: str
     version: int
     bars: list[BarOut]
-    notation: str | None
     generated_from: str | None
-    created_at: datetime
-
-
-class RefinementOut(BaseModel):
-    text: str
     created_at: datetime
 
 
@@ -49,7 +43,6 @@ class MusicSessionResponse(BaseModel):
     session_id: str
     original_request: GenerationRequestOut
     pieces: list[PieceOut]
-    refinements: list[RefinementOut]
     created_at: datetime
     last_active_at: datetime
 

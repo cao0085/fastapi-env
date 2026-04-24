@@ -1,38 +1,17 @@
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from app.shared.enums import MusicFeatureType, MusicalKey
+from app.shared.enums import MusicFeatureType, MusicalKey, NotationFormat
 
-from .instrument import InstrumentSpec, PersonaId
+from .instrument import PersonaId
 from .notation import ChordProgression
 
 
 @dataclass(frozen=True)
-class MusicFeature(ABC):
+class MusicFeature:
     type: MusicFeatureType
-    key: MusicalKey
-    progression: ChordProgression
     bars_count: int
-
-    @abstractmethod
-    def build_prompt_params(self) -> dict:
-        """回傳 domain-level raw params，service 層再組成 WalkingLineContext"""
-        ...
-
-
-@dataclass(frozen=True)
-class WalkingBassFeature(MusicFeature):
-    instrument: InstrumentSpec
-
-    def __post_init__(self):
-        if not 4 <= self.bars_count <= 16:
-            raise ValueError("bars_count must be between 4 and 16")
-
-    def build_prompt_params(self) -> dict:
-        return {
-            "key": self.key,
-            "progression": self.progression,
-            "bars_count": self.bars_count,
-            "persona_id": self.instrument.persona_id,
-            "extra_note": self.instrument.extra_note,
-        }
+    output_format: NotationFormat = NotationFormat.ABC
+    extra_note: str = ""
+    key: MusicalKey | None = None
+    progression: ChordProgression | None = None
+    persona_id: PersonaId | None = None

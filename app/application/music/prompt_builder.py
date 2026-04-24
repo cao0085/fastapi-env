@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from app.application.ports import MusicGenerationContext
 from app.domain.music.entities import MusicPiece
 from app.domain.music.value_object import Bar, MusicFeature, PersonaId
-from app.shared.enums import MusicFeatureType, MusicalKey, NotationFormat
+from app.shared.enums import MusicFeatureType, NotationFormat
 
 
 @dataclass(frozen=True)
@@ -19,21 +19,12 @@ class PersonaEntry:
 class IMusicPromptBuilder(ABC):
 
     @abstractmethod
-    def build_context(
-        self,
-        feature: MusicFeature,
-        instrument_prompt: str,
-        output_format: NotationFormat,
-        prior_versions: list[list[Bar]] | None = None,
-        latest_refinement: str | None = None,
-    ) -> MusicGenerationContext: ...
+    async def build_context(self, feature: MusicFeature) -> MusicGenerationContext: ...
 
     @abstractmethod
-    def build_refine_prompt(
+    async def build_refine_prompt(
         self,
         feature: MusicFeature,
-        instrument_prompt: str,
-        output_format: NotationFormat,
         current_piece: MusicPiece,
         refinement_text: str,
     ) -> MusicGenerationContext: ...
@@ -45,7 +36,6 @@ class IMusicPromptBuilder(ABC):
     def build_system_prompt(
         self,
         feature: MusicFeatureType,
-        key: MusicalKey,
         output_format: NotationFormat,
     ) -> str: ...
 

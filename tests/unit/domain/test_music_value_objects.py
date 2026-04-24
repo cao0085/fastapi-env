@@ -1,16 +1,27 @@
 import pytest
 
-from app.domain.music.value_objects import (
+from app.domain.music.services import MusicFeatureFactory
+from app.domain.music.value_object import (
     AbcNotation,
     ChordProgression,
-    GenerationRequest,
-    InstrumentSpec,
-    MusicalKey,
-    NotationFormat,
     PersonaId,
     RefinementMessage,
     SessionId,
 )
+from app.application.music.dtos import StartMusicGenerationCommand
+
+
+def _walking_bass_cmd(**overrides) -> StartMusicGenerationCommand:
+    defaults = dict(
+        feature="walking_bass",
+        key="C",
+        progression="ii-V-I",
+        bars_count=4,
+        persona_id="ray_brown",
+        extra_note="",
+        output_format="abc",
+    )
+    return StartMusicGenerationCommand(**{**defaults, **overrides})
 
 
 class TestChordProgression:
@@ -75,33 +86,28 @@ class TestAbcNotation:
         assert n.is_valid() is False
 
 
-class TestGenerationRequest:
+class TestMusicFeatureFactory:
     def test_bars_count_too_low_raises(self):
         with pytest.raises(ValueError, match="bars_count"):
-            GenerationRequest(
-                key=MusicalKey.C,
-                progression=ChordProgression("ii-V-I"),
-                bars_count=3,
-                instrument=InstrumentSpec(persona_id=PersonaId("ray_brown")),
-                output_format=NotationFormat.ABC,
-            )
+            MusicFeatureFactory.from_command(_walking_bass_cmd(bars_count=3))
 
     def test_bars_count_too_high_raises(self):
         with pytest.raises(ValueError, match="bars_count"):
-            GenerationRequest(
-                key=MusicalKey.C,
-                progression=ChordProgression("ii-V-I"),
-                bars_count=17,
-                instrument=InstrumentSpec(persona_id=PersonaId("ray_brown")),
-                output_format=NotationFormat.ABC,
-            )
+            MusicFeatureFactory.from_command(_walking_bass_cmd(bars_count=17))
 
-    def test_valid_request(self):
-        req = GenerationRequest(
-            key=MusicalKey.Bb,
-            progression=ChordProgression("I-IV-V"),
-            bars_count=8,
-            instrument=InstrumentSpec(persona_id=PersonaId("ray_brown")),
-            output_format=NotationFormat.ABC,
-        )
-        assert req.bars_count == 8
+    def test_missing_key_raises(self):
+        with pytest.raises(ValueError, match="key"):
+            MusicFeatureFactory.from_command(_walking_bass_cmd(key=""))
+
+    def test_missing_persona_raises(self):
+        with pytest.raises(ValueError, match="persona_id"):
+            MusicFeatureFactory.from_command(_walking_bass_cmd(persona_id=""))
+
+    def test_unsupported_feature_raises(self):
+        with pytest.raises(ValueError, match="unsupported"):
+            MusicFeatureFactory.from_command(_walking_bass_cmd(feature="unknown"))
+
+    def test_valid_walking_bass(self):
+        feature = MusicFeatureFactory.from_command(_walking_bass_cmd())
+        assert feature.bars_count == 4
+        assert feature.persona_id.value == "ray_brown"
