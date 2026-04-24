@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.dependencies import get_music_service, get_persona_catalog
+from app.api.dependencies import get_music_service
 from app.api.schemas.music_schemas import (
     BarOut,
     GenerationRequestOut,
@@ -17,8 +17,6 @@ from app.application.music.dtos import (
     StartMusicGenerationCommand,
 )
 from app.application.music.music_service import MusicService
-from app.application.music.ports import IPersonaCatalog
-
 router = APIRouter(prefix="/music", tags=["music"])
 
 
@@ -87,9 +85,9 @@ async def delete_session(
 
 @router.get("/personas", response_model=list[PersonaOut])
 async def list_personas(
-    catalog: IPersonaCatalog = Depends(get_persona_catalog),
+    service: MusicService = Depends(get_music_service),
 ) -> list[PersonaOut]:
-    entries = await catalog.list_all()
+    entries = await service.list_personas()
     return [
         PersonaOut(
             persona_id=e.persona_id,

@@ -10,12 +10,10 @@ from app.application.music.dtos import (
     StartMusicGenerationCommand,
     WalkingBassRequestDTO,
 )
-from app.application.music.ports import IPersonaCatalog
-from app.application.ports import IMusicAdapter, MusicGenerationContext
+from app.application.music.prompt_builder import IMusicPromptBuilder, PersonaEntry
+from app.application.ports import IMusicAdapter
 from app.domain.music.entities import MusicGenerationSession
-from app.domain.music.prompts import MusicSystemPrompts
 from app.domain.music.repository import IMusicGenerationSessionRepository
-from app.domain.music.services import PromptBuilderService
 from app.domain.music.value_object import (
     AbcNotation,
     Bar,
@@ -34,12 +32,10 @@ class MusicService:
     def __init__(
         self,
         session_repo: IMusicGenerationSessionRepository,
-        persona_catalog: IPersonaCatalog,
         music_adapter: IMusicAdapter,
-        prompt_builder: PromptBuilderService,
+        prompt_builder: IMusicPromptBuilder,
     ):
         self._repo = session_repo
-        self._catalog = persona_catalog
         self._ai = music_adapter
         self._prompt_builder = prompt_builder
 
@@ -60,9 +56,8 @@ class MusicService:
             case _:
                 raise ValueError(f"unsupported feature: {cmd.feature}")
 
-        persona = await self._catalog.get(feature.instrument.persona_id)
-        ctx = self._prompt_builder.build_context(
-            feature, persona.prompt_fragment)
+        persona = await self._prompt_builder.get_persona(feature.instrument.persona_id)
+        ctx = self._prompt_builder.build_context(feature, persona.prompt_fragment)
         session_id = SessionId(str(uuid4()))
 
         raw = await self._ai.generate(
@@ -82,7 +77,7 @@ class MusicService:
             raise ValueError(f"session {cmd.session_id} not found")
 
         refinement = RefinementMessage(text=cmd.refinement_text)
-        persona = await self._catalog.get(session.feature.instrument.persona_id)
+        persona = await self._prompt_builder.get_persona(session.feature.instrument.persona_id)
         ctx = self._prompt_builder.build_context(
             feature=session.feature,
             instrument_prompt=persona.prompt_fragment,
@@ -92,7 +87,7 @@ class MusicService:
 
         raw_str = await self._ai.generate_walking_line(
             ctx=ctx,
-            system_prompt=MusicSystemPrompts.walking_line_with_key(
+            system_prompt=self._prompt_builder.walking_line_system_prompt(
                 session.feature.key),
         )
         bars, notation = _parse_walking_line(raw_str)
@@ -110,6 +105,9 @@ class MusicService:
 
     async def delete_session(self, session_id: str) -> None:
         await self._repo.delete(SessionId(session_id))
+
+    async def list_personas(self) -> list[PersonaEntry]:
+        return await self._prompt_builder.list_personas()
 
 
 def _parse_walking_line(raw_str: str) -> tuple[list[Bar], AbcNotation | None]:

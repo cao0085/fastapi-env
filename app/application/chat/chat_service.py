@@ -2,7 +2,7 @@ from app.application.ports import IChatAdapter
 from app.domain.conversation.entities import ConversationSession
 from app.domain.conversation.repository import IConversationRepository
 from app.domain.conversation.value_objects import MessageRole, SessionId
-from app.domain.music.prompts import MusicSystemPrompts
+from app.shared.prompts import JAZZ_CHAT_SYSTEM
 
 from .dtos import ConversationDTO, SendMessageCommand
 
@@ -29,7 +29,7 @@ class ChatService:
 
         reply_text = await self._ai.send_message(
             history=history,
-            system_prompt=MusicSystemPrompts.JAZZ_CHAT_SYSTEM,
+            system_prompt=JAZZ_CHAT_SYSTEM,
         )
 
         session.add_message(MessageRole.MODEL, reply_text)
