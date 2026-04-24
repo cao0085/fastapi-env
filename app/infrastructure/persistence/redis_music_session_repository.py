@@ -35,15 +35,14 @@ class RedisMusicSessionRepository(IMusicGenerationSessionRepository):
         if not raw:
             return None
 
-        feature = MusicFeatureType(raw[b"feature"].decode())
-        request = _deserialize_request(feature, json.loads(raw[b"request"]))
+        feature_type = MusicFeatureType(raw[b"feature"].decode())
+        feature = _deserialize_request(feature_type, json.loads(raw[b"request"]))
         pieces = [_deserialize_piece(p) for p in json.loads(raw[b"pieces"])]
         refinements = [_deserialize_refinement(r) for r in json.loads(raw[b"refinements"])]
 
         return MusicGenerationSession(
             session_id=session_id,
             feature=feature,
-            request=request,
             pieces=pieces,
             refinements=refinements,
             created_at=datetime.fromisoformat(raw[b"created_at"].decode()),
@@ -55,10 +54,10 @@ class RedisMusicSessionRepository(IMusicGenerationSessionRepository):
         await self._redis.hset(
             key,
             mapping={
-                "feature": session.feature.value,
+                "feature": session.feature.type.value,
                 "created_at": session.created_at.isoformat(),
                 "last_active_at": datetime.utcnow().isoformat(),
-                "request": json.dumps(_serialize_request(session.request)),
+                "request": json.dumps(_serialize_request(session.feature)),
                 "pieces": json.dumps([_serialize_piece(p) for p in session.pieces]),
                 "refinements": json.dumps(
                     [_serialize_refinement(r) for r in session.refinements]
@@ -78,7 +77,6 @@ def _serialize_request(r: WalkingBassFeature) -> dict:
         "bars_count": r.bars_count,
         "persona_id": r.instrument.persona_id.value,
         "extra_note": r.instrument.extra_note,
-        "output_format": r.output_format.value,
     }
 
 
@@ -107,7 +105,7 @@ def _serialize_piece(p: MusicPiece) -> dict:
             {"chord": b.chord, "notes": [n.pitch for n in b.notes]} for b in p.bars
         ],
         "notation": p.notation.notation if p.notation else None,
-        "output_format": p.output_format.value,
+        "output_format": p.output_format.value if p.output_format else None,
         "created_at": p.created_at.isoformat(),
         "generated_from": (
             {
@@ -129,7 +127,7 @@ def _deserialize_piece(d: dict) -> MusicPiece:
             for b in d["bars"]
         ],
         notation=AbcNotation(notation=d["notation"]) if d["notation"] else None,
-        output_format=NotationFormat(d["output_format"]),
+        output_format=NotationFormat(d["output_format"]) if d.get("output_format") else None,
         created_at=datetime.fromisoformat(d["created_at"]),
         generated_from=(
             RefinementMessage(

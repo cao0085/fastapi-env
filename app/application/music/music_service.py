@@ -25,7 +25,7 @@ from app.domain.music.value_object import (
     SessionId,
     WalkingBassFeature,
 )
-from app.shared.enums import MusicFeatureType, MusicalKey
+from app.shared.enums import MusicFeatureType, MusicalKey, NotationFormat
 
 
 class MusicService:
@@ -40,6 +40,7 @@ class MusicService:
         self._prompt_builder = prompt_builder
 
     async def start_session(self, cmd: StartMusicGenerationCommand) -> MusicSessionDTO:
+        output_format = NotationFormat(cmd.output_format)
 
         match MusicFeatureType(cmd.feature):
             case MusicFeatureType.WALKING_BASS:
@@ -57,12 +58,17 @@ class MusicService:
                 raise ValueError(f"unsupported feature: {cmd.feature}")
 
         persona = await self._prompt_builder.get_persona(feature.instrument.persona_id)
-        ctx = self._prompt_builder.build_context(feature, persona.prompt_fragment)
+        system_prompt = self._prompt_builder.build_system_prompt(
+            feature.type, feature.key, output_format
+        )
+        ctx = self._prompt_builder.build_context(
+            feature, persona.prompt_fragment, output_format
+        )
         session_id = SessionId(str(uuid4()))
 
         raw = await self._ai.generate(
+            system_prompt=system_prompt,
             ctx=ctx,
-            system_prompt="temp",
         )
 
         piece = self._prompt_builder.parse_piece(feature, raw)
@@ -76,23 +82,26 @@ class MusicService:
         if session is None:
             raise ValueError(f"session {cmd.session_id} not found")
 
-        refinement = RefinementMessage(text=cmd.refinement_text)
+        current_piece = session.current_piece()
+        output_format = NotationFormat(current_piece.output_format or NotationFormat.ABC)
         persona = await self._prompt_builder.get_persona(session.feature.instrument.persona_id)
-        ctx = self._prompt_builder.build_context(
+        system_prompt = self._prompt_builder.build_system_prompt(
+            session.feature.type, session.feature.key, output_format
+        )
+        ctx = self._prompt_builder.build_refine_prompt(
             feature=session.feature,
             instrument_prompt=persona.prompt_fragment,
-            prior_versions=session.prior_versions_for_ai(),
-            latest_refinement=refinement.text,
+            output_format=output_format,
+            current_piece=current_piece,
+            refinement_text=cmd.refinement_text,
         )
-
         raw_str = await self._ai.generate_walking_line(
             ctx=ctx,
-            system_prompt=self._prompt_builder.walking_line_system_prompt(
-                session.feature.key),
+            system_prompt=system_prompt,
         )
         bars, notation = _parse_walking_line(raw_str)
-        session.add_refinement_and_piece(
-            refinement=refinement, bars=bars, notation=notation)
+        refinement = RefinementMessage(text=cmd.refinement_text)
+        session.add_refinement_and_piece(refinement=refinement, bars=bars, notation=notation)
         await self._repo.save(session)
 
         return _to_dto(session)
