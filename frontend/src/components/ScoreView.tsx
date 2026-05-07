@@ -85,7 +85,7 @@ export function ScoreView({
       ref={containerRef}
       className={className}
       style={{
-        width: '60%',
+        width: '80%',
         minHeight: 400,
         margin: '0 auto',
         padding: '32px 40px',

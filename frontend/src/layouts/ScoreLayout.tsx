@@ -5,6 +5,7 @@ import { Sidebar } from '../components/Sidebar';
 import { TitleBar } from '../components/TitleBar';
 import { Toolbar } from '../components/Toolbar';
 import { ScoreView } from '../components/ScoreView';
+import { AnalysisRail } from '../components/AnalysisRail';
 import { SONGS } from '../data/songs';
 
 function PanCanvas({ children }: { children: React.ReactNode }) {
@@ -78,6 +79,7 @@ export function ScoreLayout() {
   const [tempo, setTempo] = useState(112);
   const [isPlaying, setPlaying] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(240);
+  const [currentBar] = useState(1);
   const resizing = useRef(false);
 
   const current = SONGS.find(s => s.id === currentId)!;
@@ -127,7 +129,7 @@ export function ScoreLayout() {
       </div>
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <TitleBar
+        {/* <TitleBar
           breadcrumb="Library / Songs /"
           title={current.title}
           composer={current.composer}
@@ -135,7 +137,10 @@ export function ScoreLayout() {
           timeSig={current.timeSig}
           tags={current.tags}
           aiGenerated={current.aiGenerated}
-        />
+        /> */}
+        <PanCanvas>
+          <ScoreView musicXml={current.xml} zoom={zoom} transpose={transpose} />
+        </PanCanvas>
         <Toolbar
           isPlaying={isPlaying}
           onPlay={() => setPlaying(p => !p)}
@@ -147,10 +152,13 @@ export function ScoreLayout() {
           zoomPct={Math.round(zoom * 100)}
           onZoomChange={pct => setZoom(pct / 100)}
         />
-        <PanCanvas>
-          <ScoreView musicXml={current.xml} zoom={zoom} transpose={transpose} />
-        </PanCanvas>
       </main>
+
+      <AnalysisRail
+        song={current}
+        currentBar={currentBar}
+        onJumpToBar={() => {}}
+      />
     </div>
   );
 }

@@ -17,16 +17,33 @@ import maidenVoyageXml from './maiden-voyage.xml?raw';
 import soWhatXml from './so-what.xml?raw';
 // Vite: ?raw imports the file as a string. For CRA/Webpack use a fetch.
 
+export interface AnalysisEntry {
+  id: string;
+  barRange: [number, number];
+  title: string;
+  body: string;
+  articleId?: string;
+}
+
+export interface RelatedArticle {
+  id: string;
+  title: string;
+}
+
 export interface Song {
   id: string;
   title: string;
   composer: string;
   key: string;          // display string e.g. "E min"
   timeSig: string;      // "4/4"
+  tempo?: number;
+  form?: string;
   tags: string[];
   aiGenerated?: boolean;
   createdAt: string;    // ISO date string e.g. "2025-01-01"
   xml: string;          // MusicXML
+  analysis?: AnalysisEntry[];
+  related?: RelatedArticle[];
 }
 
 export const SONGS: Song[] = [
@@ -47,9 +64,45 @@ export const SONGS: Song[] = [
     composer: 'J. Kern',
     key: 'Ab maj',
     timeSig: '4/4',
+    tempo: 132,
+    form: 'AABA',
     tags: ['ballad'],
     createdAt: '2025-01-10',
     xml: allTheThingsXml,
+    analysis: [
+      {
+        id: 'atty-1',
+        barRange: [1, 4],
+        title: 'Opening vi-ii-V-I in Ab major',
+        body: 'The song opens with a classic cycle-of-fifths progression descending through Ab major, establishing the tonal center immediately.',
+        articleId: 'cycle-of-fifths',
+      },
+      {
+        id: 'atty-2',
+        barRange: [5, 8],
+        title: 'Modulation to C major',
+        body: 'A brief tonicization of C major via its own ii-V-I, creating contrast before the return.',
+      },
+      {
+        id: 'atty-3',
+        barRange: [9, 12],
+        title: 'Eb major ii-V-I',
+        body: 'The cycle continues downward — each A section visits three key centers a minor third apart.',
+        articleId: 'kern-harmony',
+      },
+      {
+        id: 'atty-4',
+        barRange: [17, 24],
+        title: 'Bridge — G major detour',
+        body: 'The B section pivots to G major (enharmonic Ab), the furthest harmonic point from the home key, creating maximum tension before the final A.',
+        articleId: 'bridge-analysis',
+      },
+    ],
+    related: [
+      { id: 'r1', title: 'Cycle-of-Fifths Progressions in Jazz Standards' },
+      { id: 'r2', title: 'Jerome Kern and the American Songbook' },
+      { id: 'r3', title: 'How to Improvise Over "All The Things"' },
+    ],
   },
   {
     id: 'summertime',
