@@ -1,11 +1,56 @@
 // ScoreLayout.tsx — sidebar + main two-column shell.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { TitleBar } from '../components/TitleBar';
 import { Toolbar } from '../components/Toolbar';
 import { ScoreView } from '../components/ScoreView';
 import { SONGS } from '../data/songs';
+
+function PanCanvas({ children }: { children: React.ReactNode }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const last = useRef({ x: 0, y: 0 });
+
+  const innerRef = useRef<HTMLDivElement>(null);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    dragging.current = true;
+    last.current = { x: e.clientX, y: e.clientY };
+    if (innerRef.current) innerRef.current.style.cursor = 'grabbing';
+  }, []);
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragging.current || !scrollRef.current) return;
+    scrollRef.current.scrollLeft -= e.clientX - last.current.x;
+    scrollRef.current.scrollTop  -= e.clientY - last.current.y;
+    last.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const stopDrag = useCallback(() => {
+    dragging.current = false;
+    if (innerRef.current) innerRef.current.style.cursor = 'grab';
+  }, []);
+
+  return (
+    <div
+      ref={scrollRef}
+      className="pan-canvas"
+      style={{ flex: 1, minHeight: 0, overflow: 'auto', scrollbarWidth: 'none' }}
+    >
+      <div
+        ref={innerRef}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={stopDrag}
+        onMouseLeave={stopDrag}
+        style={{ cursor: 'grab', display: 'inline-block', minWidth: '100%' }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 const NOTE_SEMITONES: Record<string, number> = {
   'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
@@ -23,34 +68,67 @@ function computeTranspose(originalKey: string, targetKey: string): number {
   return diff;
 }
 
+const SIDEBAR_MIN = 180;
+const SIDEBAR_MAX = 400;
+
 export function ScoreLayout() {
   const [currentId, setCurrentId] = useState(SONGS[0].id);
   const [zoom, setZoom] = useState(1);
   const [selectedKey, setSelectedKey] = useState(SONGS[0].key);
   const [tempo, setTempo] = useState(112);
   const [isPlaying, setPlaying] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(240);
+  const resizing = useRef(false);
 
   const current = SONGS.find(s => s.id === currentId)!;
   const transpose = computeTranspose(current.key, selectedKey);
 
-  // Reset key when switching songs
   useEffect(() => {
     setSelectedKey(current.key);
   }, [currentId]);
 
+  const onResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    resizing.current = true;
+    const startX = e.clientX;
+    const startW = sidebarWidth;
+    const onMove = (ev: MouseEvent) => {
+      if (!resizing.current) return;
+      const w = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, startW + ev.clientX - startX));
+      setSidebarWidth(w);
+    };
+    const onUp = () => {
+      resizing.current = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [sidebarWidth]);
+
   return (
     <div style={{ display: 'flex', height: '100vh', background: 'var(--paper)' }}>
-      <Sidebar
-        currentSongId={currentId}
-        onSelectSong={setCurrentId}
-        songs={SONGS}
-        practiceMinutes={192}
-        practiceGoalMinutes={300}
-      />
+      <div style={{ position: 'relative', width: sidebarWidth, flexShrink: 0 }}>
+        <Sidebar
+          currentSongId={currentId}
+          onSelectSong={setCurrentId}
+          songs={SONGS}
+          practiceMinutes={192}
+          practiceGoalMinutes={300}
+        />
+        <div
+          onMouseDown={onResizeStart}
+          style={{
+            position: 'absolute', top: 0, right: 0,
+            width: 4, height: '100%',
+            cursor: 'col-resize',
+          }}
+        />
+      </div>
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <TitleBar
-          breadcrumb="Library / Recent /"
+          breadcrumb="Library / Songs /"
           title={current.title}
           composer={current.composer}
           songKey={current.key}
@@ -69,9 +147,9 @@ export function ScoreLayout() {
           zoomPct={Math.round(zoom * 100)}
           onZoomChange={pct => setZoom(pct / 100)}
         />
-        <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <PanCanvas>
           <ScoreView musicXml={current.xml} zoom={zoom} transpose={transpose} />
-        </div>
+        </PanCanvas>
       </main>
     </div>
   );

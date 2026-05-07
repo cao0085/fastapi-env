@@ -8,3 +8,9 @@ body {
   background: var(--paper);
   color: var(--ink);
 }
+
+.pan-canvas::-webkit-scrollbar { display: none; }
+
+.song-list::-webkit-scrollbar { width: 4px; }
+.song-list::-webkit-scrollbar-track { background: #f6f4ef; }
+.song-list::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }

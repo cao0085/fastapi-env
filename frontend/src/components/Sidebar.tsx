@@ -104,7 +104,7 @@ export function Sidebar({
       </div>
 
       {/* songs list — only this block scrolls */}
-      <div style={S.songBlock}>
+      <div className="song-list" style={S.songBlock}>
         <NavHeader>
           {viewMode === 'recent' ? 'Recent' : 'Songs'}
           {(searchQuery || activeTag) && ` · ${filteredSongs.length}`}
@@ -167,7 +167,7 @@ function NavItem({
 
 const S: Record<string, React.CSSProperties> = {
   aside: {
-    width: 240,
+    width: '100%',
     display: 'flex',
     flexDirection: 'column',
     background: 'var(--paper)',
@@ -179,6 +179,8 @@ const S: Record<string, React.CSSProperties> = {
     flex: 1,
     overflowY: 'auto',
     minHeight: 0,
+    scrollbarWidth: 'thin',
+    scrollbarColor: 'var(--rule) var(--paper)',
   },
   brand: { padding: '18px 18px 12px', borderBottom: '1.5px solid var(--rule)' },
   brandTitle: { fontFamily: 'var(--serif)', fontSize: 24, fontStyle: 'italic' },
