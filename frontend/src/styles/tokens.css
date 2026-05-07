@@ -2,10 +2,23 @@
 
 :root {
   /* surface */
-  --paper: #f5f1e8;
+  --paper: #f6f4ef;
   --ink: #1a1714;
   --ink-2: #3a342d;
   --ink-mute: #6b6258;
+
+/* 1 	#e8ebe6 	淡綠灰
+2 	#dde4dc 	鼠尾草霧
+3 	#e3e7ea 	霧藍灰
+4 	#dde2eb 	冷藍霧
+5 	#e8e2ea 	淡紫霧
+6 	#ead8dc 	灰粉
+7 	#d8e3df 	蛋殼青
+8 	#cfd8d3 	莫蘭迪綠
+9 	#e9e4d8 	橄欖灰（這個算偏中性，可丟）
+10 	#d4d9d4 	石灰綠
+11 	#c9d2cf 	深霧青
+12 	#bfc8c4 	鋼青灰 */
 
   /* rules */
   --rule: #1a1714;
