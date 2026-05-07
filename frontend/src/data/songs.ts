@@ -25,6 +25,7 @@ export interface Song {
   timeSig: string;      // "4/4"
   tags: string[];
   aiGenerated?: boolean;
+  createdAt: string;    // ISO date string e.g. "2025-01-01"
   xml: string;          // MusicXML
 }
 
@@ -37,6 +38,7 @@ export const SONGS: Song[] = [
     timeSig: '4/4',
     tags: ['ballad'],
     aiGenerated: true,
+    createdAt: '2025-01-01',
     xml: autumnLeavesXml,
   },
   {
@@ -46,6 +48,7 @@ export const SONGS: Song[] = [
     key: 'Ab maj',
     timeSig: '4/4',
     tags: ['ballad'],
+    createdAt: '2025-01-10',
     xml: allTheThingsXml,
   },
   {
@@ -55,6 +58,7 @@ export const SONGS: Song[] = [
     key: 'A min',
     timeSig: '4/4',
     tags: ['ballad'],
+    createdAt: '2025-01-20',
     xml: summertimeXml,
   },
   {
@@ -64,6 +68,7 @@ export const SONGS: Song[] = [
     key: 'Eb maj',
     timeSig: '4/4',
     tags: ['ballad'],
+    createdAt: '2025-02-01',
     xml: mistyXml,
   },
   {
@@ -73,6 +78,7 @@ export const SONGS: Song[] = [
     key: 'Bb min',
     timeSig: '4/4',
     tags: ['bebop'],
+    createdAt: '2025-02-15',
     xml: roundMidnightXml,
   },
   {
@@ -82,6 +88,7 @@ export const SONGS: Song[] = [
     key: 'C maj',
     timeSig: '4/4',
     tags: ['swing'],
+    createdAt: '2025-03-01',
     xml: takeTheATrainXml,
   },
   {
@@ -91,6 +98,7 @@ export const SONGS: Song[] = [
     key: 'C maj',
     timeSig: '4/4',
     tags: ['ballad'],
+    createdAt: '2025-03-10',
     xml: flyMeToTheMoonXml,
   },
   {
@@ -100,6 +108,7 @@ export const SONGS: Song[] = [
     key: 'C min',
     timeSig: '4/4',
     tags: ['bossa'],
+    createdAt: '2025-03-20',
     xml: blueBossaXml,
   },
   {
@@ -109,6 +118,7 @@ export const SONGS: Song[] = [
     key: 'C maj',
     timeSig: '4/4',
     tags: ['swing'],
+    createdAt: '2025-03-28',
     xml: satinDollXml,
   },
   {
@@ -118,6 +128,7 @@ export const SONGS: Song[] = [
     key: 'Eb maj',
     timeSig: '4/4',
     tags: ['swing'],
+    createdAt: '2025-04-05',
     xml: thereWillNeverXml,
   },
   {
@@ -127,6 +138,7 @@ export const SONGS: Song[] = [
     key: 'D maj',
     timeSig: '4/4',
     tags: ['bossa'],
+    createdAt: '2026-04-10',
     xml: waveXml,
   },
   {
@@ -136,6 +148,7 @@ export const SONGS: Song[] = [
     key: 'F maj',
     timeSig: '4/4',
     tags: ['bossa'],
+    createdAt: '2025-04-15',
     xml: girlFromIpanemaXml,
   },
   {
@@ -145,6 +158,7 @@ export const SONGS: Song[] = [
     key: 'C min',
     timeSig: '6/4',
     tags: ['modal'],
+    createdAt: '2025-04-20',
     xml: footprintsXml,
   },
   {
@@ -154,6 +168,7 @@ export const SONGS: Song[] = [
     key: 'D maj',
     timeSig: '4/4',
     tags: ['modal'],
+    createdAt: '2025-04-25',
     xml: maidenVoyageXml,
   },
   {
@@ -163,6 +178,7 @@ export const SONGS: Song[] = [
     key: 'D min',
     timeSig: '4/4',
     tags: ['modal'],
+    createdAt: '2025-04-28',
     xml: soWhatXml,
   },
 ];

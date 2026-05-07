@@ -44,7 +44,6 @@ export function ScoreLayout() {
         currentSongId={currentId}
         onSelectSong={setCurrentId}
         songs={SONGS}
-        tagCounts={{ ballad: 22, bebop: 31, modal: 9, bossa: 14 }}
         practiceMinutes={192}
         practiceGoalMinutes={300}
       />
@@ -68,6 +67,7 @@ export function ScoreLayout() {
           onKeyChange={setSelectedKey}
           tempo={tempo}
           zoomPct={Math.round(zoom * 100)}
+          onZoomChange={pct => setZoom(pct / 100)}
         />
         <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
           <ScoreView musicXml={current.xml} zoom={zoom} transpose={transpose} />

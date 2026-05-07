@@ -21,7 +21,7 @@ export interface ScoreViewProps {
 const OSMD_OPTS: IOSMDOptions = {
   autoResize: true,
   backend: 'svg',
-  drawTitle: false,      // we render our own TitleBar
+  drawTitle: true,
   drawComposer: false,
   drawCredits: false,
   drawSubtitle: false,
@@ -85,12 +85,12 @@ export function ScoreView({
       ref={containerRef}
       className={className}
       style={{
-        width: '100%',
+        width: '60%',
         minHeight: 400,
+        margin: '0 auto',
         padding: '32px 40px',
         background: 'var(--paper)',
         color: 'var(--ink)',
-        overflow: 'auto',
       }}
     />
   );

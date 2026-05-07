@@ -19,6 +19,7 @@ export interface ToolbarProps {
   onKeyChange: (key: string) => void;
   tempo: number;
   zoomPct: number;
+  onZoomChange: (pct: number) => void;
 }
 
 export function Toolbar(p: ToolbarProps) {
@@ -68,7 +69,26 @@ export function Toolbar(p: ToolbarProps) {
         {options.map(k => <option key={k} value={k}>{k}</option>)}
       </select>
       <Cap>tempo</Cap><Chip>♩ {p.tempo}</Chip>
-      <Cap>zoom</Cap><Chip>{p.zoomPct}%</Chip>
+      <Cap>zoom</Cap>
+      <select
+        value={p.zoomPct}
+        onChange={e => p.onZoomChange(Number(e.target.value))}
+        style={{
+          border: '1.2px solid var(--rule-soft)',
+          background: 'transparent',
+          color: 'var(--ink)',
+          fontFamily: 'var(--mono)',
+          fontSize: 11,
+          letterSpacing: '0.08em',
+          padding: '3px 9px',
+          borderRadius: 999,
+          cursor: 'pointer',
+        }}
+      >
+        {[70, 80, 90, 100, 110, 120].map(n => (
+          <option key={n} value={n}>{n}%</option>
+        ))}
+      </select>
     </div>
   );
 }
