@@ -1,0 +1,49 @@
+/* tokens.css — drop in src/styles/, import once at app root */
+
+:root {
+  /* surface */
+  --paper: #f5f1e8;
+  --ink: #1a1714;
+  --ink-2: #3a342d;
+  --ink-mute: #6b6258;
+
+  /* rules */
+  --rule: #1a1714;
+  --rule-soft: rgba(26, 23, 20, 0.35);
+  --rule-faint: rgba(26, 23, 20, 0.15);
+
+  /* accent — cool teal, jazz-ish */
+  --accent: oklch(0.55 0.10 200);
+  --accent-soft: oklch(0.55 0.10 200 / 0.15);
+
+  /* type */
+  --serif: 'EB Garamond', Georgia, serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+
+  /* spacing scale */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+
+  /* radii */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 12px;
+  --r-pill: 999px;
+}
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+}
+
+/* mono / serif utility classes (use Tailwind instead if you prefer) */
+.t-mono { font-family: var(--mono); }
+.t-serif { font-family: var(--serif); }
+.t-uc { text-transform: uppercase; letter-spacing: 0.18em; }
+.t-mute { color: var(--ink-mute); }
