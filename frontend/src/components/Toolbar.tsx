@@ -2,18 +2,29 @@
 
 import { Button, Chip } from './ui';
 
+const ROOTS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+function parseMode(key: string): string {
+  const parts = key.trim().split(/\s+/);
+  return parts.length > 1 ? parts[1] : '';
+}
+
 export interface ToolbarProps {
   isPlaying: boolean;
   onPlay: () => void;
   onRegenerate: () => void;
   onExportPdf: () => void;
   onEditChords?: () => void;
-  songKey: string;
+  selectedKey: string;
+  onKeyChange: (key: string) => void;
   tempo: number;
   zoomPct: number;
 }
 
 export function Toolbar(p: ToolbarProps) {
+  const mode = parseMode(p.selectedKey);
+  const options = ROOTS.map(r => mode ? `${r} ${mode}` : r);
+
   return (
     <div
       style={{
@@ -38,7 +49,24 @@ export function Toolbar(p: ToolbarProps) {
 
       <div style={{ flex: 1 }} />
 
-      <Cap>key</Cap><Chip>{p.songKey}</Chip>
+      <Cap>key</Cap>
+      <select
+        value={p.selectedKey}
+        onChange={e => p.onKeyChange(e.target.value)}
+        style={{
+          border: '1.2px solid var(--rule-soft)',
+          background: 'transparent',
+          color: 'var(--ink)',
+          fontFamily: 'var(--mono)',
+          fontSize: 11,
+          letterSpacing: '0.08em',
+          padding: '3px 9px',
+          borderRadius: 999,
+          cursor: 'pointer',
+        }}
+      >
+        {options.map(k => <option key={k} value={k}>{k}</option>)}
+      </select>
       <Cap>tempo</Cap><Chip>♩ {p.tempo}</Chip>
       <Cap>zoom</Cap><Chip>{p.zoomPct}%</Chip>
     </div>

@@ -6,6 +6,7 @@
 import { useEffect, useRef } from 'react';
 import {
   OpenSheetMusicDisplay,
+  TransposeCalculator,
   type IOSMDOptions,
 } from 'opensheetmusicdisplay';
 
@@ -40,14 +41,15 @@ export function ScoreView({
   // Init once
   useEffect(() => {
     if (!containerRef.current) return;
-    osmdRef.current = new OpenSheetMusicDisplay(containerRef.current, OSMD_OPTS);
+    const osmd = new OpenSheetMusicDisplay(containerRef.current, OSMD_OPTS);
+    osmdRef.current = osmd;
     return () => {
       osmdRef.current?.clear();
       osmdRef.current = null;
     };
   }, []);
 
-  // Load + render whenever inputs change
+  // Reload + render whenever XML or transpose changes
   useEffect(() => {
     const osmd = osmdRef.current;
     if (!osmd || !musicXml) return;
@@ -57,22 +59,26 @@ export function ScoreView({
       try {
         await osmd.load(musicXml);
         if (cancelled) return;
+        osmd.TransposeCalculator = new TransposeCalculator();
         osmd.zoom = zoom;
-        // OSMD transpose plugin is built-in; semitones via Transpose option
-        if (transpose !== 0 && osmd.Sheet?.Transpose !== undefined) {
-          osmd.Sheet.Transpose = transpose;
-          osmd.updateGraphic();
-        }
+        osmd.Sheet.Transpose = transpose;
+        osmd.updateGraphic();
         osmd.render();
       } catch (err) {
         console.error('[ScoreView] render failed', err);
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [musicXml, zoom, transpose]);
+    return () => { cancelled = true; };
+  }, [musicXml, transpose]);
+
+  // Zoom only — no reload needed
+  useEffect(() => {
+    const osmd = osmdRef.current;
+    if (!osmd || !osmd.Sheet) return;
+    osmd.zoom = zoom;
+    osmd.render();
+  }, [zoom]);
 
   return (
     <div
