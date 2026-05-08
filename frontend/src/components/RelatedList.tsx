@@ -1,5 +1,5 @@
 // RelatedList.tsx
-import type { RelatedArticle } from '../data/songs';
+import type { RelatedArticle } from '../models/related-article';
 
 export function RelatedList({ items }: { items: RelatedArticle[] }) {
   if (!items.length) return null;

@@ -1,5 +1,5 @@
 // AnalysisCard.tsx
-import type { AnalysisEntry } from '../data/songs';
+import type { AnalysisEntry } from '../models/analysis-entry';
 
 export function AnalysisCard({
   entry, current, onClick,

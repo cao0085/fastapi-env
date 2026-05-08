@@ -8,6 +8,7 @@ import { ScoreView } from '../components/ScoreView';
 import { AnalysisRail } from '../components/AnalysisRail';
 import { useJazzStandardSource } from '../store/jazz-standard-store';
 import { fetchXml } from '../services/music-score.service';
+import { fetchSongViewMeta } from '../services/song-view.service';
 import type { SongView } from '../models/song-view';
 
 function PanCanvas({ children }: { children: React.ReactNode }) {
@@ -98,8 +99,8 @@ export function ScoreLayout() {
     if (!score) return;
     setSelectedKey(score.key);
     setCurrentView(null);
-    fetchXml(score.xml_url)
-      .then(xml => setCurrentView({ ...score, xml }))
+    Promise.all([fetchXml(score.xml_url), fetchSongViewMeta(score.id)])
+      .then(([xml, meta]) => setCurrentView({ ...score, xml, ...meta }))
       .catch(() => setCurrentView(null));
   }, [currentId, jazzStandardSource]);
 
