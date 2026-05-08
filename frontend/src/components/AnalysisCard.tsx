@@ -30,7 +30,7 @@ export function AnalysisCard({
           color: current ? 'var(--accent)' : 'var(--ink-mute)',
         }}
       >
-        BARS {entry.barRange[0]}–{entry.barRange[1]} {current && '· NOW'}
+        BARS {entry.bar_range[0]}–{entry.bar_range[1]} {current && '· NOW'}
       </div>
       <div
         style={{

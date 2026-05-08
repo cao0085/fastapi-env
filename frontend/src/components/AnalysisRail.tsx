@@ -1,5 +1,5 @@
 // AnalysisRail.tsx — 280px right column
-import type { Song } from '../data/songs';
+import type { SongView } from '../models/song-view';
 import { SongMetaCard } from './SongMetaCard';
 import { AnalysisCard } from './AnalysisCard';
 import { RelatedList } from './RelatedList';
@@ -7,10 +7,11 @@ import { RelatedList } from './RelatedList';
 export function AnalysisRail({
   song, currentBar, onJumpToBar,
 }: {
-  song: Song;
+  song: SongView | null;
   currentBar: number;
   onJumpToBar: (bar: number) => void;
 }) {
+  if (!song) return <aside style={{ width: 280, flex: '0 0 280px', borderLeft: '1.5px solid var(--rule)' }} />;
   const analysis = song.analysis ?? [];
   return (
     <aside
@@ -35,7 +36,7 @@ export function AnalysisRail({
       </div>
 
       {analysis.map(entry => {
-        const [from, to] = entry.barRange;
+        const [from, to] = entry.bar_range;
         const isCurrent = currentBar >= from && currentBar <= to;
         return (
           <AnalysisCard

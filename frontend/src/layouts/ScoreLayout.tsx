@@ -6,8 +6,9 @@ import { TitleBar } from '../components/TitleBar';
 import { Toolbar } from '../components/Toolbar';
 import { ScoreView } from '../components/ScoreView';
 import { AnalysisRail } from '../components/AnalysisRail';
-import { SONGS } from '../data/songs';
 import { useJazzStandardSource } from '../store/jazz-standard-store';
+import { fetchXml } from '../services/music-score.service';
+import type { SongView } from '../models/song-view';
 
 function PanCanvas({ children }: { children: React.ReactNode }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -75,22 +76,34 @@ const SIDEBAR_MAX = 400;
 
 export function ScoreLayout() {
   const { jazzStandardSource } = useJazzStandardSource();
-  const [currentId, setCurrentId] = useState(SONGS[0].id);
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<SongView | null>(null);
   const [zoom, setZoom] = useState(1);
-  const [selectedKey, setSelectedKey] = useState(SONGS[0].key);
+  const [selectedKey, setSelectedKey] = useState('');
   const [tempo, setTempo] = useState(112);
   const [isPlaying, setPlaying] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(240);
   const [currentBar] = useState(1);
   const resizing = useRef(false);
 
-  // render 用假資料
-  const current = SONGS.find(s => s.id === currentId)!;
-  const transpose = computeTranspose(current.key, selectedKey);
+  useEffect(() => {
+    if (jazzStandardSource.length > 0 && !currentId) {
+      setCurrentId(jazzStandardSource[0].id);
+    }
+  }, [jazzStandardSource]);
 
   useEffect(() => {
-    setSelectedKey(current.key);
-  }, [currentId]);
+    if (!currentId) return;
+    const score = jazzStandardSource.find(s => s.id === currentId);
+    if (!score) return;
+    setSelectedKey(score.key);
+    setCurrentView(null);
+    fetchXml(score.xml_url)
+      .then(xml => setCurrentView({ ...score, xml }))
+      .catch(() => setCurrentView(null));
+  }, [currentId, jazzStandardSource]);
+
+  const transpose = currentView ? computeTranspose(currentView.key, selectedKey) : 0;
 
   const onResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -142,13 +155,16 @@ export function ScoreLayout() {
           aiGenerated={current.aiGenerated}
         /> */}
         <PanCanvas>
-          <ScoreView musicXml={current.xml} zoom={zoom} transpose={transpose} />
+          {currentView
+            ? <ScoreView musicXml={currentView.xml} zoom={zoom} transpose={transpose} />
+            : <div style={{ padding: 40, color: 'var(--ink-mute)', fontFamily: 'var(--mono)', fontSize: 13 }}>loading…</div>
+          }
         </PanCanvas>
         <Toolbar
           isPlaying={isPlaying}
           onPlay={() => setPlaying(p => !p)}
-          onRegenerate={() => console.log('regen', current.id)}
-          onExportPdf={() => console.log('export', current.id)}
+          onRegenerate={() => console.log('regen', currentView?.id)}
+          onExportPdf={() => console.log('export', currentView?.id)}
           selectedKey={selectedKey}
           onKeyChange={setSelectedKey}
           tempo={tempo}
@@ -158,7 +174,7 @@ export function ScoreLayout() {
       </main>
 
       <AnalysisRail
-        song={current}
+        song={currentView}
         currentBar={currentBar}
         onJumpToBar={() => {}}
       />
