@@ -7,6 +7,7 @@ import { Toolbar } from '../components/Toolbar';
 import { ScoreView } from '../components/ScoreView';
 import { AnalysisRail } from '../components/AnalysisRail';
 import { SONGS } from '../data/songs';
+import { useJazzStandardSource } from '../store/jazz-standard-store';
 
 function PanCanvas({ children }: { children: React.ReactNode }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -73,6 +74,7 @@ const SIDEBAR_MIN = 180;
 const SIDEBAR_MAX = 400;
 
 export function ScoreLayout() {
+  const { jazzStandardSource } = useJazzStandardSource();
   const [currentId, setCurrentId] = useState(SONGS[0].id);
   const [zoom, setZoom] = useState(1);
   const [selectedKey, setSelectedKey] = useState(SONGS[0].key);
@@ -82,6 +84,7 @@ export function ScoreLayout() {
   const [currentBar] = useState(1);
   const resizing = useRef(false);
 
+  // render 用假資料
   const current = SONGS.find(s => s.id === currentId)!;
   const transpose = computeTranspose(current.key, selectedKey);
 
@@ -114,7 +117,7 @@ export function ScoreLayout() {
         <Sidebar
           currentSongId={currentId}
           onSelectSong={setCurrentId}
-          songs={SONGS}
+          songs={jazzStandardSource}
           practiceMinutes={192}
           practiceGoalMinutes={300}
         />

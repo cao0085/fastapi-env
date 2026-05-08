@@ -1,11 +1,11 @@
 // Sidebar.tsx — search + tag filter + recent view
 import { useState, useMemo } from 'react';
-import type { Song } from '../data/songs';
+import type { MusicScore } from '../models/music-score';
 
 export interface SidebarProps {
   currentSongId: string | null;
   onSelectSong: (id: string) => void;
-  songs: Song[];
+  songs: MusicScore[];
   practiceMinutes?: number;
   practiceGoalMinutes?: number;
 }
@@ -33,7 +33,7 @@ export function Sidebar({
 
   const filteredSongs = useMemo(() => {
     const base = viewMode === 'recent'
-      ? songs.filter(s => new Date(s.createdAt) >= ONE_MONTH_AGO)
+      ? songs.filter(s => new Date(s.created_at) >= ONE_MONTH_AGO)
       : songs;
     return base.filter(s => {
       const q = searchQuery.toLowerCase();
@@ -83,7 +83,7 @@ export function Sidebar({
       />
       <NavItem
         label="Recent"
-        count={songs.filter(s => new Date(s.createdAt) >= ONE_MONTH_AGO).length}
+        count={songs.filter(s => new Date(s.created_at) >= ONE_MONTH_AGO).length}
         cur={viewMode === 'recent'}
         onClick={() => setViewMode('recent')}
       />
