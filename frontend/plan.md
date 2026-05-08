@@ -172,9 +172,9 @@ CREATE TABLE score_notes (
 4. ✅ scores.json 覆蓋 endpoint（`POST /admin/scores-json/update`）
 5. ✅ 前端 admin key 存 localStorage（KeyGate）
 6. ✅ 前端 publish 流程（強制下載備份 → 覆蓋 R2）
-7. [ ] Worker 部署到正式環境（`npx wrangler deploy`）
-8. [ ] 前端 `VITE_WORKER_URL` 設為正式 Worker URL
-9. [ ] 整合 Clerk（前端 + Workers）
-10. [ ] D1 建立 score_notes table
-11. [ ] 實作 score_notes CRUD API
+7. ✅ Worker 部署到正式環境（`wrangler deploy`）
+8. ✅ 前端 `VITE_WORKER_URL` 設為正式 Worker URL
+9. ✅ 整合 Google OAuth（替代 Clerk）— Google One Tap + Workers JWT 驗證
+10. ✅ D1 建立 users + score_notes table
+11. ✅ 實作 score_notes CRUD API（GET / PUT /notes/:scoreId）+ POST /me 同步 user
 12. [ ] AI Backend 獨立部署（未來）

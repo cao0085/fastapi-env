@@ -1,5 +1,6 @@
 // AnalysisRail.tsx — 280px right column
 import type { SongView } from '../models/song-view';
+import type { ScoreNote } from '../models/score-note';
 import { SongMetaCard } from './SongMetaCard';
 import { AnalysisCard } from './AnalysisCard';
 import { RelatedList } from './RelatedList';
@@ -12,7 +13,7 @@ export function AnalysisRail({
   onJumpToBar: (bar: number) => void;
 }) {
   if (!song) return <aside style={{ width: 280, flex: '0 0 280px', borderLeft: '1.5px solid var(--rule)' }} />;
-  const analysis = song.analysis ?? [];
+  const notes = song.notes ?? [];
   return (
     <aside
       style={{
@@ -31,19 +32,19 @@ export function AnalysisRail({
       <div style={{ padding: '14px 18px 6px' }}>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.2em',
           textTransform: 'uppercase', color: 'var(--ink-mute)' }}>
-          Analysis · {analysis.length}
+          Analysis · {notes.length}
         </div>
       </div>
 
-      {analysis.map(entry => {
-        const [from, to] = entry.bar_range;
-        const isCurrent = currentBar >= from && currentBar <= to;
+      {notes.map((entry: ScoreNote) => {
+        const isCurrent = entry.bar_start != null && entry.bar_end != null
+          && currentBar >= entry.bar_start && currentBar <= entry.bar_end;
         return (
           <AnalysisCard
             key={entry.id}
             entry={entry}
             current={isCurrent}
-            onClick={() => onJumpToBar(from)}
+            onClick={() => entry.bar_start != null && onJumpToBar(entry.bar_start)}
           />
         );
       })}

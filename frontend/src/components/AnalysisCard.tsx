@@ -1,10 +1,10 @@
 // AnalysisCard.tsx
-import type { AnalysisEntry } from '../models/analysis-entry';
+import type { ScoreNote } from '../models/score-note';
 
 export function AnalysisCard({
   entry, current, onClick,
 }: {
-  entry: AnalysisEntry;
+  entry: ScoreNote;
   current: boolean;
   onClick: () => void;
 }) {
@@ -30,7 +30,10 @@ export function AnalysisCard({
           color: current ? 'var(--accent)' : 'var(--ink-mute)',
         }}
       >
-        BARS {entry.bar_range[0]}–{entry.bar_range[1]} {current && '· NOW'}
+        {entry.bar_start != null && entry.bar_end != null
+          ? `BARS ${entry.bar_start}–${entry.bar_end} ${current ? '· NOW' : ''}`
+          : current ? '· NOW' : ''
+        }
       </div>
       <div
         style={{

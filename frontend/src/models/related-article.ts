@@ -1,5 +1,1 @@
-export interface RelatedArticle {
-  id: string;
-  title: string;
-  link: string;
-}
+export type { ScoreRelated as RelatedArticle } from './score-related';

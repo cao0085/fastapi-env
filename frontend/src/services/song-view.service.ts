@@ -1,16 +1,16 @@
-import type { AnalysisEntry } from '../models/analysis-entry';
-import type { RelatedArticle } from '../models/related-article';
-import { MOCK_ANALYSIS, MOCK_RELATED } from '../mocks/song-view.mock';
+import type { ScoreNote } from '../models/score-note';
+import type { ScoreRelated } from '../models/score-related';
+import { MOCK_NOTES, MOCK_RELATED } from '../mocks/song-view.mock';
 
 export interface SongViewMeta {
-  analysis: AnalysisEntry[];
-  related: RelatedArticle[];
+  notes: ScoreNote[];
+  related: ScoreRelated[];
 }
 
 export async function fetchSongViewMeta(scoreId: string): Promise<SongViewMeta> {
   // TODO: replace with real API call
   return {
-    analysis: MOCK_ANALYSIS[scoreId] ?? [],
+    notes: MOCK_NOTES[scoreId] ?? [],
     related: MOCK_RELATED[scoreId] ?? [],
   };
 }

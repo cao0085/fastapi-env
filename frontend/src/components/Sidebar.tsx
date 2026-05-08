@@ -1,6 +1,7 @@
 // Sidebar.tsx — search + tag filter + recent view
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import type { MusicScore } from '../models/music-score';
+import { useAuth } from '../store/auth-store';
 
 export interface SidebarProps {
   currentSongId: string | null;
@@ -133,14 +134,54 @@ export function Sidebar({
         </div>
       </div>
 
-      <div style={S.user}>
-        <div style={S.avatar}><i style={{ fontStyle: 'italic' }}>m</i></div>
-        <div>
-          <div style={{ fontFamily: 'var(--sans)', fontSize: 14, lineHeight: 1 }}>miles</div>
-          <div style={S.userSub}>SETTINGS</div>
-        </div>
-      </div>
+      <UserSection />
     </aside>
+  );
+}
+
+function UserSection() {
+  const { user, signOut } = useAuth();
+  const btnRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (user || !btnRef.current) return;
+    const render = () => {
+      window.google?.accounts.id.renderButton(btnRef.current!, {
+        type: 'standard',
+        size: 'medium',
+        theme: 'outline',
+        text: 'signin_with',
+        shape: 'rectangular',
+        width: '200',
+      });
+    };
+    if (window.google?.accounts) {
+      render();
+    } else {
+      const script = document.querySelector<HTMLScriptElement>('script[src*="accounts.google.com/gsi"]');
+      script?.addEventListener('load', render);
+    }
+  }, [user]);
+
+  if (!user) {
+    return (
+      <div style={{ padding: '12px 16px', borderTop: '1px dashed var(--rule-soft)' }}>
+        <div ref={btnRef} />
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...S.user, cursor: 'pointer' }} onClick={signOut} title="Click to sign out">
+      <img
+        src={user.picture}
+        style={{ width: 28, height: 28, borderRadius: '50%', border: '1.4px solid var(--ink)' }}
+      />
+      <div>
+        <div style={{ fontFamily: 'var(--sans)', fontSize: 14, lineHeight: 1 }}>{user.name}</div>
+        <div style={S.userSub}>SIGN OUT</div>
+      </div>
+    </div>
   );
 }
 

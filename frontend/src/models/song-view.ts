@@ -1,9 +1,9 @@
 import type { MusicScore } from './music-score';
-import type { AnalysisEntry } from './analysis-entry';
-import type { RelatedArticle } from './related-article';
+import type { ScoreNote } from './score-note';
+import type { ScoreRelated } from './score-related';
 
 export interface SongView extends MusicScore {
   xml: string;
-  analysis?: AnalysisEntry[];
-  related?: RelatedArticle[];
+  notes?: ScoreNote[];
+  related?: ScoreRelated[];
 }
