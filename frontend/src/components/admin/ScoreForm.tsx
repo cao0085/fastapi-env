@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import type { MusicScore } from '../../models/music-score';
 
-const BACKEND = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const WORKER = import.meta.env.VITE_WORKER_URL ?? 'http://127.0.0.1:8787';
 
 type Errors = Partial<Record<keyof MusicScore, string>>;
 
@@ -19,9 +19,10 @@ function validate(form: MusicScore): Errors {
 interface Props {
   initial: MusicScore;
   onSave: (score: MusicScore) => void;
+  adminKey: string;
 }
 
-export function ScoreForm({ initial, onSave }: Props) {
+export function ScoreForm({ initial, onSave, adminKey }: Props) {
   const [form, setForm] = useState<MusicScore>(initial);
   const [errors, setErrors] = useState<Errors>({});
   const [uploading, setUploading] = useState(false);
@@ -36,7 +37,11 @@ export function ScoreForm({ initial, onSave }: Props) {
     try {
       const body = new FormData();
       body.append('file', file);
-      const res = await fetch(`${BACKEND}/admin/scores/upload-xml`, { method: 'POST', body });
+      const res = await fetch(`${WORKER}/admin/jazz-standard-xml/upload`, {
+        method: 'POST',
+        headers: { 'X-Admin-Key': adminKey },
+        body,
+      });
       if (!res.ok) throw new Error('upload failed');
       const { xml_url } = await res.json();
       set('xml_url', xml_url);

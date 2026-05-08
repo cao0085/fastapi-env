@@ -49,4 +49,20 @@ app.post("/admin/jazz-standard-xml/upload", async (c) => {
 	return c.json({ xml_url: xmlUrl });
 });
 
+// Admin: overwrite scores.json in R2
+app.post("/admin/scores-json/update", async (c) => {
+	const denied = requireAdmin(c);
+	if (denied) return denied;
+
+	const body = await c.req.json();
+	if (!Array.isArray(body)) return c.json({ error: "Body must be a JSON array" }, 400);
+
+	const content = JSON.stringify(body, null, 2);
+	await c.env.MUSIC_SCORES_BUCKET.put("scores.json", content, {
+		httpMetadata: { contentType: "application/json" },
+	});
+
+	return c.json({ ok: true });
+});
+
 export default app;

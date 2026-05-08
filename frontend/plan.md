@@ -166,8 +166,15 @@ CREATE TABLE score_notes (
 
 ## 實作順序
 
-1. 建立 Cloudflare Workers + D1
-2. Workers 加 Admin API Key 驗證
-3. 整合 Clerk（前端 + Workers）
-4. 實作 score_notes CRUD API
-5. AI Backend 獨立部署（未來）
+1. ✅ 建立 Cloudflare Workers + D1
+2. ✅ Workers 加 Admin API Key 驗證
+3. ✅ Admin XML 上傳 endpoint（`POST /admin/jazz-standard-xml/upload`）
+4. ✅ scores.json 覆蓋 endpoint（`POST /admin/scores-json/update`）
+5. ✅ 前端 admin key 存 localStorage（KeyGate）
+6. ✅ 前端 publish 流程（強制下載備份 → 覆蓋 R2）
+7. [ ] Worker 部署到正式環境（`npx wrangler deploy`）
+8. [ ] 前端 `VITE_WORKER_URL` 設為正式 Worker URL
+9. [ ] 整合 Clerk（前端 + Workers）
+10. [ ] D1 建立 score_notes table
+11. [ ] 實作 score_notes CRUD API
+12. [ ] AI Backend 獨立部署（未來）

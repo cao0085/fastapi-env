@@ -7,7 +7,6 @@ interface JazzStandardStore {
   loading: boolean;
   addScore: (score: MusicScore) => void;
   updateScore: (updated: MusicScore) => void;
-  exportJson: () => void;
 }
 
 const JazzStandardContext = createContext<JazzStandardStore>({
@@ -15,7 +14,6 @@ const JazzStandardContext = createContext<JazzStandardStore>({
   loading: true,
   addScore: () => {},
   updateScore: () => {},
-  exportJson: () => {},
 });
 
 export function JazzStandardProvider({ children }: { children: React.ReactNode }) {
@@ -36,20 +34,8 @@ export function JazzStandardProvider({ children }: { children: React.ReactNode }
       prev.map(s => s.id === updated.id ? updated : s)
     );
 
-  const exportJson = () => {
-    const blob = new Blob([JSON.stringify(jazzStandardSource, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'source.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
-    <JazzStandardContext.Provider value={{ jazzStandardSource, loading, addScore, updateScore, exportJson }}>
+    <JazzStandardContext.Provider value={{ jazzStandardSource, loading, addScore, updateScore }}>
       {children}
     </JazzStandardContext.Provider>
   );
