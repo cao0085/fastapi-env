@@ -1,54 +1,96 @@
-方案 A：表單進 sidebar 展開區。需要讓 sidebar 的 form 區和 page 的 result 區共享狀態 — 用 React Portal 最乾淨（state 留在 page，form JSX 透過 portal 渲染到 sidebar 插槽裡）。
+# Music Score 資料管理流程
 
+## 整體架構
 
-Created 5 files
-Created
-sidebarSlot.jsx
-+10
--0
-Created
-Sidebar.jsx
-+74
--0
-Created
-Sidebar.css
-+143
--0
-Created
-App.jsx
-+33
--0
-Created
-FeaturePage.css
-+204
--0
-Now update each page: form JSX portal'd into sidebar, result in main.
+```
+Cloudflare R2 (Public)
+├── scores.json          ← 樂譜目錄（核心 metadata）
+├── autumn-leaves.xml
+├── all-the-things.xml
+└── ...
 
-方案 A：表單進 sidebar 展開區。需要讓 sidebar 的 form 區和 page 的 result 區共享狀態 — 用 React Portal 最乾淨（state 留在 page，form JSX 透過 portal 渲染到 sidebar 插槽裡）。
+FastAPI Backend
+└── POST /admin/scores/upload-xml   ← 唯一需要維護的 API
 
+Frontend (songs.ts)
+├── analysis[]           ← 前端維護，不進 R2
+└── related[]            ← 前端維護，不進 R2
 
-Created 5 files
-Now update each page: form JSX portal'd into sidebar, result in main.
+Database
+└── score_notes          ← 使用者個人筆記
+```
 
+---
 
-Created 2 files
-Created
-ImprovisationPage.jsx
-+214
--0
-Created
-WalkingBassPage.jsx
-+146
--0
+## scores.json 結構
 
+```json
+[
+  {
+    "id": "autumn-leaves",
+    "title": "Autumn Leaves",
+    "composer": "J. Kosma",
+    "key": "E min",
+    "time_sig": "4/4",
+    "tempo": null,
+    "form": null,
+    "tags": ["ballad"],
+    "ai_generated": false,
+    "created_at": "2025-01-01",
+    "xml_url": "https://pub-xxx.r2.dev/autumn-leaves.xml"
+  }
+]
+```
 
-觀察目前畫面有個問題：sidebar 展開區 + 中間表單 pane 功能重複（「開啟表單 →」連結到的就是右邊那個 pane），而且結果區只吃一半寬度，很可惜。
+---
 
-建議幾個方向：
+## 新增 / 編輯曲目流程
 
-A（推薦）合併：表單直接放進 sidebar 展開區
+### Step 1 — 載入現有資料
+- 前端 fetch `scores.json` from R2
+- 載入到前端記憶體
 
-sidebar 加寬到 ~320px，展開後完整表單塞進 accordion panel
-結果區從 ~60% 變成 ~80% 寬，樂譜更好看
-符合你原本「展開後變成 form options」的規劃
-缺點：sidebar 變高、form 長會需要捲動
+### Step 2 — 上傳 XML
+- 拖曳 `.xml` 檔到管理介面
+- `POST /admin/scores/upload-xml` → 後端上傳到 R2
+- 回傳 `{ xml_url: "https://..." }`
+
+### Step 3 — 填寫 metadata
+- 前端編輯表單填入：title, composer, key, time_sig, tempo, form, tags
+- `xml_url` 由 Step 2 自動帶入
+
+### Step 4 — 產出並上傳 scores.json
+- 前端將編輯結果合併進現有清單
+- 下載新的 `scores.json` 到本地
+- 手動上傳到 R2 覆蓋舊檔
+
+---
+
+## App 啟動流程
+
+- FastAPI lifespan 事件 fetch `scores.json` from R2
+- 載入到 global memory store（`dict[str, MusicScore]`）
+- 所有讀取請求直接查 memory，不走 DB
+
+---
+
+## 後端 API（唯一需要維護）
+
+```
+POST /admin/scores/upload-xml
+  Content-Type: multipart/form-data
+  Body: file (.xml)
+
+Response:
+  { "xml_url": "https://pub-xxx.r2.dev/{filename}.xml" }
+```
+
+---
+
+## 前端維護範圍（不進 R2）
+
+| 欄位 | 維護位置 |
+|------|---------|
+| `analysis[]` | `songs.ts` hardcode |
+| `related[]` | `songs.ts` hardcode |
+| 個人筆記 | Database（user_id + score_id） |
