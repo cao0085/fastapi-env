@@ -1,0 +1,26 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "worker",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-05-08",
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"r2_buckets": [
+		{
+			"binding": "MUSIC_SCORES_BUCKET",
+			"bucket_name": "music-score"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "music-scores",
+			"database_id": "5b33848d-549c-4a7b-8b7b-241d4ec469b3"
+		}
+	]
+}
